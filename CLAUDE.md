@@ -564,6 +564,22 @@ app/
 
 ---
 
+## RuboCop
+
+This project uses **RuboCop** with the `rubocop-rails-omakase` style guide as its base configuration (see `.rubocop.yml`).
+
+**All code must pass `bin/rubocop` with zero offenses.** This is enforced in CI.
+
+### Rules
+
+1. **Never ignore or disable RuboCop rules** without an explicit, justified comment (`# rubocop:disable ...` with a reason).
+2. **Follow the project's RuboCop configuration exactly.** Do not override rules inline for convenience.
+3. **Prefer double-quoted strings** (`"hello"`) unless single quotes are needed to avoid backslash escaping. This is the project standard.
+4. **Run `bin/rubocop` before committing.** Use `bin/rubocop -A` to auto-correct safe offenses when appropriate.
+5. **When RuboCop and this guide conflict, RuboCop wins.** The `.rubocop.yml` configuration is the authoritative source for style rules.
+
+---
+
 ## Checklist before each PR
 
 - [ ] Does each class have a single responsibility?
@@ -582,3 +598,4 @@ app/
 - [ ] Data integrity rules expressed as model validations, not service-level checks?
 - [ ] Minimal `if/else` — guard clauses, polymorphism, or hash lookups used instead?
 - [ ] Complex tasks planned and broken into steps before coding?
+- [ ] `bin/rubocop` passes with zero offenses?

@@ -13,7 +13,7 @@ class AddNormalizedAuthorNameToCommits < ActiveRecord::Migration[8.1]
           original = commit.author_name
           next if original.nil?
           normalized = normalizer.call(original.to_s.downcase.strip) || original.strip
-          updates << [commit.id, normalized]
+          updates << [ commit.id, normalized ]
         end
         # Atualiza em lote para reduzir N+1
         updates.each do |id, norm|

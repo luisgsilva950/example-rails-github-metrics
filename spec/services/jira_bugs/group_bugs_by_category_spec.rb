@@ -7,8 +7,8 @@ RSpec.describe JiraBugs::GroupBugsByCategory do
   subject(:service) { described_class.new(jira_base_url: jira_base_url) }
 
   it "groups bugs by category with JIRA links" do
-    create(:jira_bug, issue_key: "CWS-100", categories: ["feature:login", "project:auth"])
-    create(:jira_bug, issue_key: "CWS-101", categories: ["feature:login"])
+    create(:jira_bug, issue_key: "CWS-100", categories: [ "feature:login", "project:auth" ])
+    create(:jira_bug, issue_key: "CWS-101", categories: [ "feature:login" ])
 
     result = service.call(scope: JiraBug.done)
 
@@ -18,7 +18,7 @@ RSpec.describe JiraBugs::GroupBugsByCategory do
   end
 
   it "excludes excluded labels" do
-    create(:jira_bug, categories: ["feature:login", "jira_escalated"])
+    create(:jira_bug, categories: [ "feature:login", "jira_escalated" ])
 
     result = service.call(scope: JiraBug.done)
 
@@ -27,8 +27,8 @@ RSpec.describe JiraBugs::GroupBugsByCategory do
   end
 
   it "returns sorted keys" do
-    create(:jira_bug, categories: ["project:z_last"])
-    create(:jira_bug, categories: ["feature:a_first"])
+    create(:jira_bug, categories: [ "project:z_last" ])
+    create(:jira_bug, categories: [ "feature:a_first" ])
 
     result = service.call(scope: JiraBug.done)
 

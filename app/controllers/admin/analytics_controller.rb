@@ -106,7 +106,7 @@ module Admin
       @selected_resolved_teams = Array(params[:resolved_team_names]).reject(&:blank?)
       default_bug_team = "DA Backbone"
       if @selected_resolved_teams.blank? && @resolved_team_options.include?(default_bug_team)
-        @selected_resolved_teams = [default_bug_team]
+        @selected_resolved_teams = [ default_bug_team ]
       end
       resolved_scope = resolved_scope.where(team: @selected_resolved_teams) if @selected_resolved_teams.any?
 
@@ -226,7 +226,7 @@ module Admin
         total_changes = pr.additions.to_i + pr.deletions.to_i
         avg_changes = if pr.changed_files.to_i.positive?
                         total_changes.to_f / pr.changed_files.to_i
-                      end
+        end
 
         {
           pull_request: pr,
@@ -384,7 +384,7 @@ module Admin
             after_hours_score = wrap_after_hours_minutes(minutes)
             if late_candidate.nil? || after_hours_score > late_candidate[:score]
               late_candidate = { commit: commit, score: after_hours_score }
-          end
+            end
         end
       end
 

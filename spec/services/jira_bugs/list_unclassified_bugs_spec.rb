@@ -8,8 +8,8 @@ RSpec.describe JiraBugs::ListUnclassifiedBugs do
 
   before do
     create(:jira_bug, development_type: nil, components: [])
-    create(:jira_bug, development_type: "Backend", components: ["CW Elements"])
-    create(:jira_bug, development_type: nil, components: ["Weather"])
+    create(:jira_bug, development_type: "Backend", components: [ "CW Elements" ])
+    create(:jira_bug, development_type: nil, components: [ "Weather" ])
   end
 
   it "returns bugs without development_type" do

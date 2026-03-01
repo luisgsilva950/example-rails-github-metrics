@@ -61,7 +61,7 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
-  gem 'dotenv-rails'
+  gem "dotenv-rails"
 end
 
 group :test do
@@ -75,12 +75,12 @@ group :test do
 end
 
 
-gem 'octokit', '~> 4.0'
-gem 'jira-ruby', require: false
-gem 'certifi'
-gem 'stringio'
-gem 'rgeo'
-gem 'rgeo-geojson'
-gem 'chunky_png'
-gem 'static_map'
+gem "octokit", "~> 4.0"
+gem "jira-ruby", require: false
+gem "certifi"
+gem "stringio"
+gem "rgeo"
+gem "rgeo-geojson"
+gem "chunky_png"
+gem "static_map"
 gem "slack-ruby-client"

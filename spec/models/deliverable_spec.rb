@@ -53,13 +53,13 @@ RSpec.describe Deliverable do
     it ".backlog returns deliverables without a cycle" do
       backlog_item = create(:deliverable, cycle: nil)
       create(:deliverable, cycle: create(:cycle))
-      expect(described_class.backlog).to eq([backlog_item])
+      expect(described_class.backlog).to eq([ backlog_item ])
     end
 
     it ".by_status filters by status" do
       done = create(:deliverable, status: "done")
       create(:deliverable, status: "backlog")
-      expect(described_class.by_status("done")).to eq([done])
+      expect(described_class.by_status("done")).to eq([ done ])
     end
   end
 end

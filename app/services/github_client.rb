@@ -62,7 +62,7 @@ class GithubClient
 
     results = {}
     mutex = Mutex.new
-    worker_count = [queue.size, max_threads.to_i, 1].max.clamp(1, pr_numbers.size)
+    worker_count = [ queue.size, max_threads.to_i, 1 ].max.clamp(1, pr_numbers.size)
 
     threads = Array.new(worker_count) do
       Thread.new do

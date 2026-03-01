@@ -34,7 +34,7 @@ RSpec.describe Cycle do
     it ".current returns active cycles" do
       active = create(:cycle, start_date: 1.day.ago, end_date: 1.day.from_now)
       create(:cycle, start_date: 30.days.ago, end_date: 15.days.ago)
-      expect(described_class.current).to eq([active])
+      expect(described_class.current).to eq([ active ])
     end
   end
 

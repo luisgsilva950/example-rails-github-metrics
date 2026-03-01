@@ -20,22 +20,22 @@ class JiraBugsExtractor
 
   private
 
-  RCA_FIELD = 'customfield_10249'
-  PRIORITY_FIELD = 'priority'
-  TEAM_FIELD_PRIMARY = 'customfield_10265'
-  TEAM_FIELD_FALLBACK = 'customfield_10300'
-  COMMENT_FIELD = 'comment'
-  DESCRIPTION_FIELD = 'description'
-  TYPE_FIELD = 'issuetype'
-  REPORTER_FIELD = 'reporter'
-  STATUS_FIELD = 'status'
-  RESPONSIBLE_FIELD = 'assignee'
-  TITLE_FIELD = 'summary'
-  CREATED_FIELD = 'created'
-  UPDATED_FIELD = 'updated'
-  LABELS_FIELD = 'labels'
-  COMPONENT_FIELD = 'components'
-  DEVELOPMENT_FIELD = 'customfield_10735'
+  RCA_FIELD = "customfield_10249"
+  PRIORITY_FIELD = "priority"
+  TEAM_FIELD_PRIMARY = "customfield_10265"
+  TEAM_FIELD_FALLBACK = "customfield_10300"
+  COMMENT_FIELD = "comment"
+  DESCRIPTION_FIELD = "description"
+  TYPE_FIELD = "issuetype"
+  REPORTER_FIELD = "reporter"
+  STATUS_FIELD = "status"
+  RESPONSIBLE_FIELD = "assignee"
+  TITLE_FIELD = "summary"
+  CREATED_FIELD = "created"
+  UPDATED_FIELD = "updated"
+  LABELS_FIELD = "labels"
+  COMPONENT_FIELD = "components"
+  DEVELOPMENT_FIELD = "customfield_10735"
 
   def save_issue(issue)
     fields = issue.fields
@@ -43,7 +43,7 @@ class JiraBugsExtractor
     title = fields[TITLE_FIELD]
     opened_at = to_time(fields[CREATED_FIELD])
     jira_updated_at = to_time(fields[UPDATED_FIELD])
-    components = Array(fields[COMPONENT_FIELD]).map { |c| c['name'] }.compact
+    components = Array(fields[COMPONENT_FIELD]).map { |c| c["name"] }.compact
     labels = Array(fields[LABELS_FIELD]).compact
     priority = extract_name(fields[PRIORITY_FIELD])
     issue_type = extract_name(fields[TYPE_FIELD])
@@ -68,7 +68,7 @@ class JiraBugsExtractor
       begin
         jira_issue = @client.fetch_issue(issue_key)
         if jira_issue
-          jira_issue.save({ 'fields' => { 'labels' => normalized_categories } })
+          jira_issue.save({ "fields" => { "labels" => normalized_categories } })
           Rails.logger.info("[#{issue_key}] JIRA labels updated after normalization")
         else
           Rails.logger.warn("[#{issue_key}] Could not fetch issue from JIRA to update labels")
@@ -117,8 +117,8 @@ class JiraBugsExtractor
   end
 
   def extract_categories(fields)
-    categories_field = fields['customfield_categories'] || fields['labels']
-    Array(categories_field).map { |v| v.is_a?(Hash) ? v['value'] : v }.compact
+    categories_field = fields["customfield_categories"] || fields["labels"]
+    Array(categories_field).map { |v| v.is_a?(Hash) ? v["value"] : v }.compact
   end
 
   def extract_team(fields)
@@ -126,9 +126,9 @@ class JiraBugsExtractor
     fallback = fields[TEAM_FIELD_FALLBACK]
     val = primary.presence || fallback
     if val.is_a?(Hash)
-      val['value'] || val['name']
+      val["value"] || val["name"]
     elsif val.is_a?(Array)
-      val.map { |v| v.is_a?(Hash) ? (v['value'] || v['name']) : v }.compact.join(',')
+      val.map { |v| v.is_a?(Hash) ? (v["value"] || v["name"]) : v }.compact.join(",")
     else
       val.to_s.presence
     end
@@ -137,7 +137,7 @@ class JiraBugsExtractor
   def extract_name(field_value)
     return nil if field_value.nil?
     if field_value.is_a?(Hash)
-      field_value['name'] || field_value['value'] || field_value['displayName'] || field_value['emailAddress']
+      field_value["name"] || field_value["value"] || field_value["displayName"] || field_value["emailAddress"]
     else
       field_value.to_s
     end
@@ -145,13 +145,13 @@ class JiraBugsExtractor
 
   def extract_comments(comment_field)
     return [] if comment_field.nil?
-    list = comment_field['comments'] || [] rescue []
+    list = comment_field["comments"] || [] rescue []
     list.map do |c|
       {
-        author: extract_name(c['author']),
-        body: c['body'],
-        created: to_time(c['created']),
-        updated: to_time(c['updated'])
+        author: extract_name(c["author"]),
+        body: c["body"],
+        created: to_time(c["created"]),
+        updated: to_time(c["updated"])
       }
     end
   end
@@ -162,10 +162,10 @@ class JiraBugsExtractor
     return nil if dev_info.nil?
 
     raw = if dev_info.is_a?(Hash)
-            dev_info['value'] || dev_info['name']
-          elsif dev_info.is_a?(String)
+            dev_info["value"] || dev_info["name"]
+    elsif dev_info.is_a?(String)
             dev_info
-          end
+    end
 
     raw if VALID_DEVELOPMENT_TYPES.include?(raw)
   end
@@ -174,9 +174,9 @@ class JiraBugsExtractor
     rca_field = fields[RCA_FIELD]
     return rca_field if rca_field.is_a?(String)
     if rca_field.is_a?(Hash)
-      rca_field['value'] || rca_field['name'] || rca_field['text']
+      rca_field["value"] || rca_field["name"] || rca_field["text"]
     else
-      fields['customfield_root_cause_analysis'] || fields['Root Cause'] || fields['RCA']
+      fields["customfield_root_cause_analysis"] || fields["Root Cause"] || fields["RCA"]
     end
   end
 end

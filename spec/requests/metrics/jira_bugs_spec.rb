@@ -7,9 +7,9 @@ RSpec.describe "Metrics::JiraBugs", type: :request do
   let(:today) { Time.current.in_time_zone(JiraBug::SAO_PAULO_TZ).to_date }
 
   before do
-    create(:jira_bug, :with_categories, team: team, opened_at: today - 5.days, development_type: "Frontend", components: ["CW Elements"])
-    create(:jira_bug, :with_feature, team: team, opened_at: today - 3.days, development_type: "Backend", components: ["Weather"])
-    create(:jira_bug, :data_integrity, team: team, opened_at: today - 1.day, development_type: "Frontend", components: ["Notes"])
+    create(:jira_bug, :with_categories, team: team, opened_at: today - 5.days, development_type: "Frontend", components: [ "CW Elements" ])
+    create(:jira_bug, :with_feature, team: team, opened_at: today - 3.days, development_type: "Backend", components: [ "Weather" ])
+    create(:jira_bug, :data_integrity, team: team, opened_at: today - 1.day, development_type: "Frontend", components: [ "Notes" ])
   end
 
   describe "GET /metrics/jira_bugs/unclassified" do

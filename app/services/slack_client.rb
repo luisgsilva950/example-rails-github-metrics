@@ -76,4 +76,3 @@ class SlackClient
     raise "Slack bot token not configured. Set SLACK_BOT_TOKEN env or credentials[:slack][:bot_token]."
   end
 end
-

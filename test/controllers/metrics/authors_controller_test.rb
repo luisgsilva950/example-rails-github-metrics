@@ -20,7 +20,7 @@ class Metrics::AuthorsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, body["content"].first["total_commits"]
     # Breakdown repos
     repo_names = body["content"].first["repos"].map { |r| r["name"] }.sort
-    assert_equal ["org/repo1", "org/repo2"].sort, repo_names
+    assert_equal [ "org/repo1", "org/repo2" ].sort, repo_names
     assert_equal 1, body["meta"]["page"]
     assert_equal 25, body["meta"]["size"]
     assert_equal 2, body["meta"]["total_authors"]

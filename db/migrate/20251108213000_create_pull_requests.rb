@@ -20,7 +20,7 @@ class CreatePullRequests < ActiveRecord::Migration[8.1]
     end
 
     add_index :pull_requests, :github_id, unique: true
-    add_index :pull_requests, [:repository_id, :number], unique: true
+    add_index :pull_requests, [ :repository_id, :number ], unique: true
     add_index :pull_requests, :normalized_author_name
     add_index :pull_requests, :state
     add_index :pull_requests, :opened_at

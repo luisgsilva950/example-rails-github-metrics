@@ -23,12 +23,12 @@ class Metrics::AuthorsController < ApplicationController
   private
 
   def total_distinct_authors
-    Commit.where.not(normalized_author_name: [nil, '']).distinct.count(:normalized_author_name)
+    Commit.where.not(normalized_author_name: [ nil, "" ]).distinct.count(:normalized_author_name)
   end
 
   def paginated_authors(page, size)
     offset = (page - 1) * size
-    Commit.where.not(normalized_author_name: [nil, ''])
+    Commit.where.not(normalized_author_name: [ nil, "" ])
           .group(:normalized_author_name)
           .select("commits.normalized_author_name AS author", "COUNT(*) AS total_commits")
           .order("total_commits DESC")
@@ -72,6 +72,6 @@ class Metrics::AuthorsController < ApplicationController
     page = 1 if page < 1
     size = 25 if size <= 0
     size = 10000 if size > 10000
-    [page, size]
+    [ page, size ]
   end
 end

@@ -22,4 +22,3 @@ class AddExtendedFieldsToJiraBugs < ActiveRecord::Migration[8.1]
     add_index :jira_bugs, :jira_updated_at
   end
 end
-

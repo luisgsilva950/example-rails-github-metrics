@@ -76,7 +76,7 @@ RSpec.describe "Planning::CycleOperationalActivities", type: :request do
 
         expect(CycleOperationalActivity.count).to eq(2)
         dates = CycleOperationalActivity.order(:start_date).pluck(:start_date)
-        expect(dates).to eq([Date.new(2026, 2, 25), Date.new(2026, 3, 4)])
+        expect(dates).to eq([ Date.new(2026, 2, 25), Date.new(2026, 3, 4) ])
         expect(CycleOperationalActivity.first.end_date).to eq(CycleOperationalActivity.first.start_date)
         expect(response).to redirect_to(plan_planning_cycle_path(cycle, anchor: "operational-activities"))
         expect(flash[:notice]).to include("2 recurring")
@@ -94,7 +94,7 @@ RSpec.describe "Planning::CycleOperationalActivities", type: :request do
 
         # Fridays in cycle: Feb 27, Mar 6 = 2 records
         expect(CycleOperationalActivity.count).to eq(2)
-        expect(CycleOperationalActivity.all.map(&:developer_id).uniq).to eq([developer.id])
+        expect(CycleOperationalActivity.all.map(&:developer_id).uniq).to eq([ developer.id ])
       end
 
       it "redirects with alert when no matching weekdays found" do

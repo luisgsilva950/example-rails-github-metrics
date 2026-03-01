@@ -38,13 +38,13 @@ RSpec.describe Developer do
     it ".by_stack filters by domain_stack" do
       be_dev = create(:developer, domain_stack: "backend")
       create(:developer, domain_stack: "frontend")
-      expect(described_class.by_stack("backend")).to eq([be_dev])
+      expect(described_class.by_stack("backend")).to eq([ be_dev ])
     end
 
     it ".by_seniority filters by seniority" do
       senior = create(:developer, seniority: "senior")
       create(:developer, seniority: "junior")
-      expect(described_class.by_seniority("senior")).to eq([senior])
+      expect(described_class.by_seniority("senior")).to eq([ senior ])
     end
   end
 end

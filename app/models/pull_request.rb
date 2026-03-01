@@ -8,7 +8,7 @@ class PullRequest < ApplicationRecord
   before_create :normalize_author_name
 
   scope :merged, -> { where.not(merged_at: nil) }
-  scope :open_state, -> { where(state: 'open') }
+  scope :open_state, -> { where(state: "open") }
 
   private
 

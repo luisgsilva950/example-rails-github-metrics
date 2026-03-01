@@ -6,9 +6,9 @@ RSpec.describe JiraBugs::BuildBubbleChartData do
   subject(:service) { described_class.new }
 
   it "returns chart data with x/y positions and radius" do
-    create(:jira_bug, categories: ["feature:login"], development_type: "Backend")
-    create(:jira_bug, categories: ["feature:login"], development_type: "Backend")
-    create(:jira_bug, categories: ["feature:search"], development_type: "Frontend")
+    create(:jira_bug, categories: [ "feature:login" ], development_type: "Backend")
+    create(:jira_bug, categories: [ "feature:login" ], development_type: "Backend")
+    create(:jira_bug, categories: [ "feature:search" ], development_type: "Frontend")
 
     result = service.call(scope: JiraBug.done.where.not(development_type: nil))
 
@@ -18,8 +18,8 @@ RSpec.describe JiraBugs::BuildBubbleChartData do
   end
 
   it "counts feature occurrences correctly" do
-    create(:jira_bug, categories: ["feature:login"], development_type: "Backend")
-    create(:jira_bug, categories: ["feature:login"], development_type: "Backend")
+    create(:jira_bug, categories: [ "feature:login" ], development_type: "Backend")
+    create(:jira_bug, categories: [ "feature:login" ], development_type: "Backend")
 
     result = service.call(scope: JiraBug.done.where.not(development_type: nil))
 

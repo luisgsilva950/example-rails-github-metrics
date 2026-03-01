@@ -20,7 +20,7 @@ class CycleOperationalActivity < ApplicationRecord
 
   scope :ordered, -> { order(:start_date) }
   scope :for_developer, ->(developer_id) {
-    where(developer_id: [developer_id, nil])
+    where(developer_id: [ developer_id, nil ])
   }
   scope :overlapping, ->(start_date, end_date) {
     where("start_date <= ? AND end_date >= ?", end_date, start_date)

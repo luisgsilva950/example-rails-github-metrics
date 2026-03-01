@@ -152,16 +152,16 @@ class Metrics::JiraBugsController < ApplicationController
 
   def resolve_category_types
     types = Array(params[:category_types]).reject(&:blank?)
-    types = [params[:category_type]] if types.empty? && params[:category_type].present?
-    types.empty? ? ["feature"] : types
+    types = [ params[:category_type] ] if types.empty? && params[:category_type].present?
+    types.empty? ? [ "feature" ] : types
   end
 
   def pagination_params
-    page = [params.fetch(:page, 1).to_i, 1].max
+    page = [ params.fetch(:page, 1).to_i, 1 ].max
     size = params.fetch(:size, 25).to_i
     size = 25 if size <= 0
-    size = [size, 10_000].min
-    [page, size]
+    size = [ size, 10_000 ].min
+    [ page, size ]
   end
 
   def build_sync_jql

@@ -17,4 +17,3 @@ namespace :slack do
     puts "Fetched #{messages.size} messages from channel #{channel_id}"
   end
 end
-

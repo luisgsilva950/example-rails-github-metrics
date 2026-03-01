@@ -6,12 +6,12 @@
 # Este initializer não desativa verificação; isso é controlado no JiraClient.
 # Aqui apenas anexamos certificados extras ao store padrão.
 
-require 'openssl'
+require "openssl"
 
-extra_file = ENV['JIRA_SSL_CERT_FILE']
-extra_path = ENV['JIRA_SSL_CERT_PATH']
-extra_crl_file = ENV['JIRA_SSL_CRL_FILE']
-extra_crl_path = ENV['JIRA_SSL_CRL_PATH']
+extra_file = ENV["JIRA_SSL_CERT_FILE"]
+extra_path = ENV["JIRA_SSL_CERT_PATH"]
+extra_crl_file = ENV["JIRA_SSL_CRL_FILE"]
+extra_crl_path = ENV["JIRA_SSL_CRL_PATH"]
 
 begin
   if extra_file.present? && File.exist?(extra_file)
@@ -61,7 +61,7 @@ begin
     end
 
     if extra_crl_path.present? && Dir.exist?(extra_crl_path)
-      Dir[File.join(extra_crl_path, '*.crl')].each do |crl_file|
+      Dir[File.join(extra_crl_path, "*.crl")].each do |crl_file|
         begin
           crl = OpenSSL::X509::CRL.new(File.read(crl_file))
           store.add_crl(crl)

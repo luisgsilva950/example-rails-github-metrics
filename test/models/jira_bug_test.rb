@@ -21,4 +21,3 @@ class JiraBugTest < ActiveSupport::TestCase
     assert_includes dup.errors[:issue_key], "has already been taken"
   end
 end
-

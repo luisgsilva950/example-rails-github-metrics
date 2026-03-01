@@ -84,8 +84,8 @@ RSpec.describe JiraBug do
   end
 
   describe ".with_category_prefix" do
-    let!(:feature_bug) { create(:jira_bug, categories: ["feature:login"]) }
-    let!(:project_bug) { create(:jira_bug, categories: ["project:auth"]) }
+    let!(:feature_bug) { create(:jira_bug, categories: [ "feature:login" ]) }
+    let!(:project_bug) { create(:jira_bug, categories: [ "project:auth" ]) }
 
     it "returns bugs with matching prefix" do
       result = described_class.with_category_prefix("feature")
@@ -96,11 +96,11 @@ RSpec.describe JiraBug do
 
   describe ".filter_categories" do
     it "removes excluded labels" do
-      categories = ["feature:login", "jira_escalated", "Failure", "delayed", "project:auth"]
+      categories = [ "feature:login", "jira_escalated", "Failure", "delayed", "project:auth" ]
 
       result = described_class.filter_categories(categories)
 
-      expect(result).to eq(["feature:login", "project:auth"])
+      expect(result).to eq([ "feature:login", "project:auth" ])
     end
 
     it "handles nil input" do

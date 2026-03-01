@@ -72,11 +72,11 @@ module JiraBugs
         series[combo][time_key] += 1 unless combo.empty?
       end
 
-      [series, all_keys]
+      [ series, all_keys ]
     end
 
     def build_prefixes(group_by_category, sub_category)
-      prefixes = [group_by_category]
+      prefixes = [ group_by_category ]
       prefixes << sub_category if sub_category.present? && sub_category != group_by_category
       prefixes
     end

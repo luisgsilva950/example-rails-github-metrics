@@ -21,7 +21,7 @@ module JiraBugs
     private
 
     def selected_fields
-      [:id, :issue_key, :title, :status, :development_type, :components, :categories, :opened_at]
+      [ :id, :issue_key, :title, :status, :development_type, :components, :categories, :opened_at ]
     end
 
     def apply_filters(scope, filters)

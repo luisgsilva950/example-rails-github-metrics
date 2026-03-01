@@ -117,7 +117,7 @@ RSpec.describe CycleOperationalActivity, type: :model do
       early = create(:cycle_operational_activity, cycle: cycle, name: "bugs",
                      start_date: Date.new(2026, 2, 25), end_date: Date.new(2026, 2, 27))
 
-      expect(cycle.cycle_operational_activities.ordered).to eq([early, late])
+      expect(cycle.cycle_operational_activities.ordered).to eq([ early, late ])
     end
   end
 

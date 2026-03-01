@@ -7,7 +7,7 @@ RSpec.describe JiraBugs::BuildBugsOverTime do
 
   let!(:bug1) { create(:jira_bug, :with_feature, opened_at: "2026-01-05 12:00:00") }
   let!(:bug2) { create(:jira_bug, :with_feature, opened_at: "2026-01-06 12:00:00") }
-  let!(:bug3) { create(:jira_bug, categories: ["feature:signup", "project:auth"], opened_at: "2026-01-12 12:00:00") }
+  let!(:bug3) { create(:jira_bug, categories: [ "feature:signup", "project:auth" ], opened_at: "2026-01-12 12:00:00") }
   let(:scope) { JiraBug.done }
 
   describe "total mode (no group_by_category)" do

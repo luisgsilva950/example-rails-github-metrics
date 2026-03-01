@@ -29,7 +29,7 @@ RSpec.describe JiraBugs::ListAllBugs do
   end
 
   it "filters by categories_filter" do
-    result = service.call(scope: JiraBug.all, filters: { categories_filter: ["feature:login"] })
+    result = service.call(scope: JiraBug.all, filters: { categories_filter: [ "feature:login" ] })
 
     result[:bugs].each do |bug|
       expect(bug[:categories]).to include("feature:login")

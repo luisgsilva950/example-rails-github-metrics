@@ -9,9 +9,9 @@ RSpec.describe JiraBugs::SerializeBug do
     build(:jira_bug,
       issue_key: "CWS-999",
       title: "Test bug",
-      categories: ["feature:login", "jira_escalated"],
+      categories: [ "feature:login", "jira_escalated" ],
       development_type: "Frontend",
-      components: ["My Cropwise"],
+      components: [ "My Cropwise" ],
       opened_at: Time.zone.parse("2026-01-15 10:00:00")
     )
   end
@@ -35,7 +35,7 @@ RSpec.describe JiraBugs::SerializeBug do
   it "filters excluded labels from categories" do
     result = serializer.call(bug)
 
-    expect(result[:categories]).to eq(["feature:login"])
+    expect(result[:categories]).to eq([ "feature:login" ])
     expect(result[:categories]).not_to include("jira_escalated")
   end
 end

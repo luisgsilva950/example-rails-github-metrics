@@ -10,29 +10,29 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   # Defines the root path route ("/")
-  root 'metrics/dashboard#index'
+  root "metrics/dashboard#index"
 
   # Ranking de autores por número de commits + breakdown por repositório
   namespace :metrics do
-    get 'dashboard', to: 'dashboard#index'
-    get 'authors', to: 'authors#index'
-    get 'jira_bugs/unclassified', to: 'jira_bugs#unclassified'
-    get 'jira_bugs/by_category', to: 'jira_bugs#by_category'
-    get 'jira_bugs/invalid_categories', to: 'jira_bugs#invalid_categories'
-    get 'jira_bugs/bubble_chart', to: 'jira_bugs#bubble_chart'
-    get 'jira_bugs/bubble_chart_page', to: 'jira_bugs#bubble_chart_page'
-    get 'jira_bugs/invalid_categories_page', to: 'jira_bugs#invalid_categories_page'
-    get 'jira_bugs/all', to: 'jira_bugs#all_bugs_page'
-    get 'jira_bugs/bugs_over_time', to: 'jira_bugs#bugs_over_time_page', as: 'jira_bugs_over_time'
-    post 'jira_bugs/sync_from_jira', to: 'jira_bugs#sync_from_jira'
-    post 'sync_settings/toggle', to: 'sync_settings#toggle'
+    get "dashboard", to: "dashboard#index"
+    get "authors", to: "authors#index"
+    get "jira_bugs/unclassified", to: "jira_bugs#unclassified"
+    get "jira_bugs/by_category", to: "jira_bugs#by_category"
+    get "jira_bugs/invalid_categories", to: "jira_bugs#invalid_categories"
+    get "jira_bugs/bubble_chart", to: "jira_bugs#bubble_chart"
+    get "jira_bugs/bubble_chart_page", to: "jira_bugs#bubble_chart_page"
+    get "jira_bugs/invalid_categories_page", to: "jira_bugs#invalid_categories_page"
+    get "jira_bugs/all", to: "jira_bugs#all_bugs_page"
+    get "jira_bugs/bugs_over_time", to: "jira_bugs#bugs_over_time_page", as: "jira_bugs_over_time"
+    post "jira_bugs/sync_from_jira", to: "jira_bugs#sync_from_jira"
+    post "sync_settings/toggle", to: "sync_settings#toggle"
   end
 
   namespace :admin do
-    root to: 'dashboard#index'
-    get 'analytics', to: 'analytics#index'
-    get 'records/:model', to: 'records#index', as: :records
-    get 'records/:model/:id', to: 'records#show', as: :record
+    root to: "dashboard#index"
+    get "analytics", to: "analytics#index"
+    get "records/:model", to: "records#index", as: :records
+    get "records/:model/:id", to: "records#show", as: :record
   end
 
   namespace :planning do

@@ -15,7 +15,7 @@ module JiraBugs
 
       scope.select(:id, :categories, :development_type).find_each do |bug|
         features(bug).each do |feature|
-          counts[[bug.development_type, feature]] += 1
+          counts[[ bug.development_type, feature ]] += 1
         end
       end
 

@@ -32,7 +32,7 @@ module JiraBugs
     end
 
     def build_select_fields(include_dev_type)
-      fields = [:id, :categories]
+      fields = [ :id, :categories ]
       fields << :development_type if include_dev_type
       fields
     end

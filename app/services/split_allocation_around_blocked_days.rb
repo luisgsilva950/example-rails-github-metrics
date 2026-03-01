@@ -47,11 +47,11 @@ class SplitAllocationAroundBlockedDays
 
     blocked.each do |day|
       segment_end = day - 1.day
-      segments << [current_start, segment_end] if current_start <= segment_end
+      segments << [ current_start, segment_end ] if current_start <= segment_end
       current_start = day + 1.day
     end
 
-    segments << [current_start, end_date] if current_start <= end_date
+    segments << [ current_start, end_date ] if current_start <= end_date
     segments
   end
 
@@ -69,7 +69,7 @@ class SplitAllocationAroundBlockedDays
 
   def unchanged?(allocation, valid_segments)
     valid_segments.size == 1 &&
-      valid_segments.first == [allocation.start_date, allocation.end_date]
+      valid_segments.first == [ allocation.start_date, allocation.end_date ]
   end
 
   def replace_with_segments(allocation, segments)
