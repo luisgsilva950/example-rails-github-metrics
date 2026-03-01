@@ -61,7 +61,7 @@
       <span class="pln-metric__lbl">Gross</span>
     </div>
     <% if @operational_activities.any? %>
-      <% total_operational_reserve = @capacities.sum { |cap| @cycle.operational_hours_for(cap.developer_id) } %>
+      <% total_operational_reserve = total_alloc_ops + total_unallocated_ops %>
       <div class="pln-metric pln-metric--ops">
         <span class="pln-metric__val">−<%= total_operational_reserve %>h</span>
         <span class="pln-metric__lbl">Ops</span>
