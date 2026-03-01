@@ -1,135 +1,231 @@
-# README
+# Rails GitHub Metrics
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Engineering metrics dashboard built with Rails 8.1. Aggregates data from GitHub (commits, pull requests) and Jira (bugs), and includes a capacity planning module for development cycles.
 
-## Endpoint de Métricas de Autores
+[![CI](https://github.com/Luisgsilva950/example-rails-github-metrics/actions/workflows/ci.yml/badge.svg)](https://github.com/Luisgsilva950/example-rails-github-metrics/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Luisgsilva950/example-rails-github-metrics/graph/badge.svg)](https://codecov.io/gh/Luisgsilva950/example-rails-github-metrics)
 
-Foi adicionado o endpoint `GET /metrics/authors` que retorna um ranking de autores (baseado em `normalized_author_name`) ordenado pelo total de commits, incluindo breakdown por repositório.
+---
 
-Exemplo de resposta:
+## Features
 
-```json
-[
-	{
-		"author": "alice",
-		"total_commits": 42,
-		"repos": [
-			{ "name": "org/repo1", "commits": 10 },
-			{ "name": "org/repo2", "commits": 32 }
-		]
-	},
-	{
-		"author": "bob",
-		"total_commits": 17,
-		"repos": [
-			{ "name": "org/repo1", "commits": 5 },
-			{ "name": "org/repo3", "commits": 12 }
-		]
-	}
-]
+### Metrics Dashboard
+
+- **Author Ranking** — commits by author with per-repository breakdown
+- **Jira Bugs** — categorization, bubble charts, trends over time, unclassified/invalid bug tracking
+- **Sync Controls** — toggle Jira sync from the dashboard UI
+
+### Capacity Planning
+
+- **Teams & Developers** — manage teams, developers (stack, seniority, productivity factor), and absences
+- **Cycles** — define time-boxed delivery cycles with holiday-aware work day calculation
+- **Deliverables** — track bets, spillovers, and technical debt with effort estimation
+- **Allocations** — assign developers to deliverables with a Gantt-style plan view
+
+### Data Extraction
+
+- **GitHub** — extracts repositories, commits, and pull requests via Octokit
+- **Jira** — imports bugs with categories, components, RCA, and priority via JQL
+
+---
+
+## Tech Stack
+
+| Layer           | Technology                 |
+| --------------- | -------------------------- |
+| Framework       | Rails 8.1, Ruby 3.2        |
+| Database        | PostgreSQL 15              |
+| Background Jobs | Solid Queue                |
+| Asset Pipeline  | Propshaft + Import Maps    |
+| Frontend        | Hotwire (Turbo + Stimulus) |
+| Tests           | RSpec, FactoryBot          |
+| Coverage        | SimpleCov + Codecov        |
+| Linting         | RuboCop                    |
+| Security        | Brakeman, bundler-audit    |
+| CI/CD           | GitHub Actions             |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Ruby 3.2.3
+- PostgreSQL 15+
+- Node.js (for import maps audit)
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/Luisgsilva950/example-rails-github-metrics.git
+cd example-rails-github-metrics
+
+# Start PostgreSQL (via Docker)
+docker compose up -d db
+
+# Install dependencies and prepare the database
+bundle install
+bin/rails db:create db:migrate db:seed
+
+# Start the server
+bin/rails server
 ```
 
-### Uso
+The app will be available at `http://localhost:3000`.
+
+---
+
+## Environment Variables
+
+### GitHub Integration
+
+| Variable                    | Description                           | Default |
+| --------------------------- | ------------------------------------- | ------- |
+| `GITHUB_ACCESS_TOKEN`       | Personal access token with repo scope | —       |
+| `GITHUB_API_RETRY_MAX`      | Max retry attempts                    | `3`     |
+| `GITHUB_API_RETRY_INTERVAL` | Seconds between retries               | `1`     |
+| `GITHUB_API_RETRY_BACKOFF`  | Backoff factor                        | `2`     |
+| `GITHUB_OPEN_TIMEOUT`       | Connection timeout (seconds)          | `10`    |
+| `GITHUB_READ_TIMEOUT`       | Read timeout (seconds)                | `30`    |
+| `COMMITS_BATCH_SIZE`        | Batch size for commit processing      | `100`   |
+
+### Jira Integration
+
+| Variable             | Description                                                                              | Default |
+| -------------------- | ---------------------------------------------------------------------------------------- | ------- |
+| `JIRA_SITE`          | Jira instance URL (e.g. `https://company.atlassian.net`)                                 | —       |
+| `JIRA_USERNAME`      | Jira account email                                                                       | —       |
+| `JIRA_API_TOKEN`     | API token ([generate here](https://id.atlassian.com/manage-profile/security/api-tokens)) | —       |
+| `JIRA_BUGS_JQL`      | JQL query to fetch bugs                                                                  | —       |
+| `JIRA_MAX_RESULTS`   | Max issues per query                                                                     | `500`   |
+| `JIRA_FIELDS`        | Comma-separated field list                                                               | `*all`  |
+| `JIRA_EXPAND`        | Fields to expand (e.g. `changelog`)                                                      | —       |
+| `JIRA_FETCH_FULL`    | Re-fetch individual issues                                                               | `true`  |
+| `JIRA_SSL_CERT_FILE` | Custom SSL cert path                                                                     | —       |
+| `JIRA_SSL_CERT_PATH` | Custom SSL cert directory                                                                | —       |
+| `JIRA_VERIFY_SSL`    | Set to `0` to disable SSL verification (dev only)                                        | `1`     |
+
+Create a `.env` file at the project root (it's gitignored):
+
+```env
+GITHUB_ACCESS_TOKEN=ghp_your_token_here
+JIRA_SITE=https://your-instance.atlassian.net
+JIRA_USERNAME=your.email@domain.com
+JIRA_API_TOKEN=your_jira_token
+JIRA_BUGS_JQL=project = ABC AND issuetype = Bug ORDER BY created DESC
+```
+
+---
+
+## Data Extraction
+
+### GitHub Metrics
+
+```bash
+bin/rake metrics:extract
+```
+
+### Jira Bugs
+
+```bash
+bin/rake jira:extract_bugs
+```
+
+If your Jira instance uses custom fields for categories or RCA, adjust `extract_categories` and `extract_rca` in `app/services/jira_bugs_extractor.rb`.
+
+---
+
+## API Endpoints
+
+### Metrics
+
+| Method | Path                                    | Description                      |
+| ------ | --------------------------------------- | -------------------------------- |
+| `GET`  | `/metrics/dashboard`                    | Main dashboard                   |
+| `GET`  | `/metrics/authors`                      | Author ranking by commits (JSON) |
+| `GET`  | `/metrics/jira_bugs/by_category`        | Bugs grouped by category (JSON)  |
+| `GET`  | `/metrics/jira_bugs/unclassified`       | Unclassified bugs (JSON)         |
+| `GET`  | `/metrics/jira_bugs/invalid_categories` | Invalid categories (JSON)        |
+| `GET`  | `/metrics/jira_bugs/bubble_chart`       | Bubble chart data (JSON)         |
+| `GET`  | `/metrics/jira_bugs/all`                | All bugs page                    |
+| `GET`  | `/metrics/jira_bugs/bugs_over_time`     | Bugs over time chart             |
+| `POST` | `/metrics/jira_bugs/sync_from_jira`     | Trigger Jira sync                |
+
+### Planning
+
+| Method | Path                        | Description             |
+| ------ | --------------------------- | ----------------------- |
+| `GET`  | `/planning/teams`           | List teams              |
+| `GET`  | `/planning/developers`      | List developers         |
+| `GET`  | `/planning/cycles`          | List cycles             |
+| `GET`  | `/planning/cycles/:id/plan` | Cycle plan (Gantt view) |
+| `GET`  | `/planning/deliverables`    | List deliverables       |
+
+### Example
 
 ```bash
 curl http://localhost:3000/metrics/authors | jq
 ```
 
-### Notas de Implementação
-* A agregação usa `JOIN` entre `commits` e `repositories` + `GROUP BY` para reduzir carga na aplicação.
-* O índice único em `commits.sha` permite uso futuro de inserção em lote com `upsert_all` sem duplicações.
-* Variáveis de ambiente para retries/timeouts da API GitHub:
-	- `GITHUB_API_RETRY_MAX`, `GITHUB_API_RETRY_INTERVAL`, `GITHUB_API_RETRY_BACKOFF`
-	- `GITHUB_OPEN_TIMEOUT`, `GITHUB_READ_TIMEOUT`
-	- `COMMITS_BATCH_SIZE` para futuro processamento em lote.
-
-## Extração de Bugs do Jira
-
-Foi adicionada a integração básica para importar bugs via JQL.
-
-### Campos armazenados
-- issue_key
-- title
-- opened_at
-- components (array)
-- categories (array)
-- root_cause_analysis (texto)
-
-### Variáveis de ambiente necessárias
-Defina no seu `.env` ou ambiente de execução:
-```
-JIRA_SITE=https://sua-instancia.atlassian.net
-JIRA_USERNAME=seu.email@dominio.com
-JIRA_API_TOKEN=token_gerado_no_atlassian
-JIRA_BUGS_JQL=project = ABC AND issuetype = Bug ORDER BY created DESC
-JIRA_MAX_RESULTS=500 # opcional
-```
-Gere um token em https://id.atlassian.com/manage-profile/security/api-tokens.
-
-### Variáveis avançadas (opcionais)
-- `JIRA_FIELDS` (default `*all`): lista de campos ex: `summary,components,labels,customfield_12345`
-- `JIRA_EXPAND`: ex: `changelog,renderedFields`
-- `JIRA_FETCH_FULL` (default `true`): se `false`, não refaz fetch individual por issue
-
-### Execução
-Suba o Postgres (ex: `docker compose up -d db`) e rode as migrations:
-```
-bin/rails db:migrate
-```
-Execute a tarefa de extração:
-```
-JIRA_BUGS_JQL="project = ABC AND issuetype = Bug ORDER BY created DESC" bin/rake jira:extract_bugs
+```json
+[
+  {
+    "author": "alice",
+    "total_commits": 42,
+    "repos": [
+      { "name": "org/repo1", "commits": 10 },
+      { "name": "org/repo2", "commits": 32 }
+    ]
+  }
+]
 ```
 
-### Customização de campos
-Se a sua instância usa campos customizados para Categorias ou RCA, ajuste os métodos `extract_categories` e `extract_rca` em `app/services/jira_bugs_extractor.rb`.
+---
 
-### Troubleshooting SSL para Jira
+## Tests
 
-Se você receber erro como:
-```
-SSL_connect returned=1 errno=0 state=error: certificate verify failed (unable to get certificate CRL)
-```
-Passos:
-1. Atualize certificados locais (macOS Homebrew):
-   ```bash
-   brew update
-   brew reinstall ca-certificates
-   sudo security delete-certificate -Z <SHA1_antigo> /Library/Keychains/System.keychain || true
-   ```
-2. Baixe a cadeia de certificados corporativos e salve em um arquivo PEM, ex: `corp-ca.pem`, e defina:
-   ```bash
-   export JIRA_SSL_CERT_FILE="$PWD/corp-ca.pem"
-   ```
-3. Se possuir vários certificados, coloque-os em um diretório e defina:
-   ```bash
-   export JIRA_SSL_CERT_PATH="$PWD/certs"
-   ```
-4. Teste conexão simples (opcional):
-   ```ruby
-   require 'net/https'; require 'uri'
-   uri = URI(ENV['JIRA_SITE']); http = Net::HTTP.new(uri.host, 443)
-   http.use_ssl = true; http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-   http.start { puts http.head('/').code }
-   ```
-5. Como último recurso em DEV apenas:
-   ```bash
-   export JIRA_VERIFY_SSL=0
-   ```
-   (NÃO use em produção.)
-6. Invalidação de CRL: pode indicar que a cadeia não inclui lista de revogação; obtenha CRL corporativa ou ignore somente em dev.
-
-## Testes
-
-Rodar apenas o teste do controller:
+This project uses **RSpec** with **FactoryBot** and **SimpleCov** for coverage.
 
 ```bash
-bin/rails test test/controllers/metrics/authors_controller_test.rb
+# Run the full test suite
+bundle exec rspec
+
+# Run a specific file
+bundle exec rspec spec/services/normalize_author_name_spec.rb
+
+# Run a specific test by line number
+bundle exec rspec spec/services/normalize_author_name_spec.rb:5
 ```
 
-Ou toda a suíte:
+Coverage reports are generated in `coverage/index.html` after each run.
 
-```bash
-bin/rails test
-```
+---
+
+## CI/CD
+
+GitHub Actions runs 4 parallel jobs on every push to `main` and on pull requests:
+
+| Job           | What it does                                                   |
+| ------------- | -------------------------------------------------------------- |
+| **scan_ruby** | Brakeman (static security analysis) + bundler-audit (CVE scan) |
+| **scan_js**   | Import map JavaScript dependency audit                         |
+| **lint**      | RuboCop with caching                                           |
+| **test**      | RSpec + SimpleCov → Codecov upload + HTML coverage artifact    |
+
+---
+
+## Code Quality
+
+This project follows the guidelines defined in [CLAUDE.md](CLAUDE.md):
+
+- **Sandi Metz** — small classes (≤100 lines), small methods (≤5 lines), max 4 params
+- **Avdi Grimm** — confident code, guard clauses, no silent nil returns
+- **DHH** — convention over configuration, use Rails as designed
+- **SOLID** — strict SRP and DIP with dependency injection throughout
+
+---
+
+## License
+
+This project is for educational and personal use.
