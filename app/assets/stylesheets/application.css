@@ -1747,14 +1747,14 @@ button, .btn {
 
 /* ── Deliverable strip ── */
 .pln-deliverable-strip {
-	display: flex;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
 	gap: 0.4rem;
-	flex-wrap: wrap;
 	margin-bottom: 0.75rem;
 }
 
 .pln-dtag {
-	display: inline-flex;
+	display: flex;
 	align-items: center;
 	gap: 0.4rem;
 	padding: 0.35rem 0.7rem;
@@ -1765,6 +1765,7 @@ button, .btn {
 	color: var(--text-primary);
 	cursor: pointer;
 	transition: background 0.12s, border-color 0.12s;
+	min-width: 0;
 }
 
 .pln-dtag:hover {
@@ -1811,6 +1812,42 @@ button, .btn {
 /* ── Gantt section ── */
 .pln-gantt-section {
 	flex: 1;
+}
+
+.pln-gantt-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.5rem;
+}
+
+.pln-gantt-header__title {
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin: 0;
+}
+
+.pln-gantt-header__actions {
+	display: flex;
+	gap: 0.4rem;
+	align-items: center;
+}
+
+.pln-gantt-section--expanded {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	background: #0d1117;
+	overflow: auto;
+	padding: 1rem 1.5rem;
+	display: flex;
+	flex-direction: column;
+}
+
+.pln-gantt-section--expanded .gantt-wrap {
+	flex: 1;
+	overflow: auto;
 }
 
 .pln-empty-gantt {
