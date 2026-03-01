@@ -93,13 +93,13 @@ jobs:
       - name: Prepare database
         env:
           RAILS_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test
         run: bin/rails db:test:prepare
 
       - name: Run RSpec tests
         env:
           RAILS_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test
           CI: true
         run: bundle exec rspec --format progress --format documentation --out tmp/rspec_results.txt
 
