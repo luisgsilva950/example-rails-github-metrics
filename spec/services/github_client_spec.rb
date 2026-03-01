@@ -18,17 +18,17 @@ RSpec.describe GithubClient do
       repo1 = double("Repo", full_name: "org/repo1")
       repo2 = double("Repo", full_name: "org/repo2")
 
-      allow(octokit).to receive(:org_teams).with("org").and_return([team])
-      allow(octokit).to receive(:team_repos).with(42).and_return([repo1, repo2])
+      allow(octokit).to receive(:org_teams).with("org").and_return([ team ])
+      allow(octokit).to receive(:team_repos).with(42).and_return([ repo1, repo2 ])
 
       result = client.repositories_for_team("org/core-team")
 
-      expect(result).to eq(["org/repo1", "org/repo2"])
+      expect(result).to eq([ "org/repo1", "org/repo2" ])
     end
 
     it "returns empty array when team is not found" do
       team = double("Team", id: 1, slug: "other-team")
-      allow(octokit).to receive(:org_teams).with("org").and_return([team])
+      allow(octokit).to receive(:org_teams).with("org").and_return([ team ])
 
       result = client.repositories_for_team("org/unknown-team")
 
@@ -45,12 +45,12 @@ RSpec.describe GithubClient do
       team = double("Team", id: 10, slug: "my-team")
       repo = double("Repo", full_name: "org/repo")
 
-      allow(octokit).to receive(:org_teams).with("org").and_return([team])
-      allow(octokit).to receive(:team_repos).with(10).and_return([repo])
+      allow(octokit).to receive(:org_teams).with("org").and_return([ team ])
+      allow(octokit).to receive(:team_repos).with(10).and_return([ repo ])
 
       result = client.repositories_for_team("org/teams/my-team")
 
-      expect(result).to eq(["org/repo"])
+      expect(result).to eq([ "org/repo" ])
     end
 
     it "handles Octokit::NotFound" do
@@ -74,11 +74,11 @@ RSpec.describe GithubClient do
   describe "#commits_for_repo" do
     it "returns commits from last year" do
       commit = double("Commit", sha: "abc123")
-      allow(octokit).to receive(:commits_since).and_return([commit])
+      allow(octokit).to receive(:commits_since).and_return([ commit ])
 
       result = client.commits_for_repo("org/repo")
 
-      expect(result).to eq([commit])
+      expect(result).to eq([ commit ])
     end
 
     it "returns empty on Octokit::Conflict" do
@@ -91,9 +91,9 @@ RSpec.describe GithubClient do
   describe "#pull_requests_for_repo" do
     it "returns all pull requests" do
       pr = double("PR", number: 1)
-      allow(octokit).to receive(:pull_requests).with("org/repo", state: "all").and_return([pr])
+      allow(octokit).to receive(:pull_requests).with("org/repo", state: "all").and_return([ pr ])
 
-      expect(client.pull_requests_for_repo("org/repo")).to eq([pr])
+      expect(client.pull_requests_for_repo("org/repo")).to eq([ pr ])
     end
 
     it "returns empty on Octokit::Conflict" do
@@ -125,7 +125,7 @@ RSpec.describe GithubClient do
       allow(octokit).to receive(:pull_request).with("org/repo", 1).and_return(pr1)
       allow(octokit).to receive(:pull_request).with("org/repo", 2).and_return(pr2)
 
-      result = client.pull_request_details_batch("org/repo", [1, 2], max_threads: 1)
+      result = client.pull_request_details_batch("org/repo", [ 1, 2 ], max_threads: 1)
 
       expect(result[1]).to eq(pr1)
       expect(result[2]).to eq(pr2)
@@ -138,7 +138,7 @@ RSpec.describe GithubClient do
     it "returns nil for failed PR fetches" do
       allow(octokit).to receive(:pull_request).and_raise(StandardError.new("fail"))
 
-      result = client.pull_request_details_batch("org/repo", [1], max_threads: 1)
+      result = client.pull_request_details_batch("org/repo", [ 1 ], max_threads: 1)
 
       expect(result[1]).to be_nil
     end
@@ -147,7 +147,7 @@ RSpec.describe GithubClient do
       pr = double("PR", number: 5)
       allow(octokit).to receive(:pull_request).with("org/repo", 5).and_return(pr)
 
-      result = client.pull_request_details_batch("org/repo", [5, 5, 5], max_threads: 1)
+      result = client.pull_request_details_batch("org/repo", [ 5, 5, 5 ], max_threads: 1)
 
       expect(result.size).to eq(1)
     end

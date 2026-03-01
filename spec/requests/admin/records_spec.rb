@@ -40,7 +40,7 @@ RSpec.describe "Admin::Records", type: :request do
       create(:commit, repository: repo, author_name: "Jane Doe")
       create(:commit, repository: repo, author_name: "John Smith")
 
-      get "/admin/records/commits", params: { normalized_author_names: ["jane doe"] }, headers: credentials
+      get "/admin/records/commits", params: { normalized_author_names: [ "jane doe" ] }, headers: credentials
 
       expect(response).to have_http_status(:ok)
     end

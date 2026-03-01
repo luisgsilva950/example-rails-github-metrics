@@ -24,9 +24,9 @@ RSpec.describe "Admin::Analytics", type: :request do
 
     # Create JIRA bugs for jira_bugs and resolved tabs
     create(:jira_bug, team: "Digital Farm", priority: "High", status: "10 Done",
-           components: ["Weather"], opened_at: 2.months.ago, assignee: "jane.doe")
+           components: [ "Weather" ], opened_at: 2.months.ago, assignee: "jane.doe")
     create(:jira_bug, team: "DA Backbone", priority: "Medium", status: "10 Done",
-           components: ["Notes"], opened_at: 1.month.ago, assignee: "john.smith")
+           components: [ "Notes" ], opened_at: 1.month.ago, assignee: "john.smith")
   end
 
   describe "GET /admin/analytics (default overview tab)" do
@@ -44,7 +44,7 @@ RSpec.describe "Admin::Analytics", type: :request do
     end
 
     it "filters overview by author names" do
-      get "/admin/analytics", params: { tab: "overview", overview_author_names: ["jane doe"] }, headers: credentials
+      get "/admin/analytics", params: { tab: "overview", overview_author_names: [ "jane doe" ] }, headers: credentials
 
       expect(response).to have_http_status(:ok)
     end
@@ -61,7 +61,7 @@ RSpec.describe "Admin::Analytics", type: :request do
     it "filters by author names" do
       get "/admin/analytics", params: {
         tab: "authors",
-        normalized_author_names: ["jane doe"]
+        normalized_author_names: [ "jane doe" ]
       }, headers: credentials
 
       expect(response).to have_http_status(:ok)
@@ -88,7 +88,7 @@ RSpec.describe "Admin::Analytics", type: :request do
     it "filters by repository names" do
       get "/admin/analytics", params: {
         tab: "repositories",
-        repository_names: [repo.name]
+        repository_names: [ repo.name ]
       }, headers: credentials
 
       expect(response).to have_http_status(:ok)
@@ -115,7 +115,7 @@ RSpec.describe "Admin::Analytics", type: :request do
     it "filters by team" do
       get "/admin/analytics", params: {
         tab: "jira_bugs",
-        jira_team_names: ["Digital Farm"]
+        jira_team_names: [ "Digital Farm" ]
       }, headers: credentials
 
       expect(response).to have_http_status(:ok)
@@ -142,7 +142,7 @@ RSpec.describe "Admin::Analytics", type: :request do
     it "filters by resolved teams" do
       get "/admin/analytics", params: {
         tab: "resolved_bugs",
-        resolved_team_names: ["DA Backbone"]
+        resolved_team_names: [ "DA Backbone" ]
       }, headers: credentials
 
       expect(response).to have_http_status(:ok)

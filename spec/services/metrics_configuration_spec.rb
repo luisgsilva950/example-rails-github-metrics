@@ -7,7 +7,7 @@ RSpec.describe MetricsConfiguration do
     it "parses comma-separated teams from env" do
       config = described_class.new(env: { "GITHUB_TEAMS" => "org/team-a, org/team-b" })
 
-      expect(config.team_slugs).to eq(["org/team-a", "org/team-b"])
+      expect(config.team_slugs).to eq([ "org/team-a", "org/team-b" ])
     end
 
     it "returns empty array when env var is missing" do
@@ -27,7 +27,7 @@ RSpec.describe MetricsConfiguration do
     it "parses comma-separated repos from env" do
       config = described_class.new(env: { "GITHUB_REPOS" => "org/repo-1, org/repo-2" })
 
-      expect(config.explicit_repo_names).to eq(["org/repo-1", "org/repo-2"])
+      expect(config.explicit_repo_names).to eq([ "org/repo-1", "org/repo-2" ])
     end
 
     it "returns empty array when env var is missing" do

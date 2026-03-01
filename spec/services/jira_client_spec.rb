@@ -47,21 +47,21 @@ RSpec.describe JiraClient do
     let(:full_issue2) { double("FullIssue", key: "TEST-2") }
 
     it "returns issues from JQL query with fetch_full" do
-      allow(issue_resource).to receive(:jql).and_return([issue1, issue2])
+      allow(issue_resource).to receive(:jql).and_return([ issue1, issue2 ])
       allow(issue_resource).to receive(:find).with("1001").and_return(full_issue1)
       allow(issue_resource).to receive(:find).with("1002").and_return(full_issue2)
 
       result = client.search_issues("project = TEST", fetch_full: true)
 
-      expect(result).to eq([full_issue1, full_issue2])
+      expect(result).to eq([ full_issue1, full_issue2 ])
     end
 
     it "returns issues without fetch_full" do
-      allow(issue_resource).to receive(:jql).and_return([issue1, issue2])
+      allow(issue_resource).to receive(:jql).and_return([ issue1, issue2 ])
 
       result = client.search_issues("project = TEST", fetch_full: false)
 
-      expect(result).to eq([issue1, issue2])
+      expect(result).to eq([ issue1, issue2 ])
     end
 
     it "returns empty array on error" do
@@ -76,11 +76,11 @@ RSpec.describe JiraClient do
     it "handles fetch_full from ENV" do
       allow(ENV).to receive(:fetch).and_call_original
       allow(ENV).to receive(:fetch).with("JIRA_FETCH_FULL", "true").and_return("false")
-      allow(issue_resource).to receive(:jql).and_return([issue1])
+      allow(issue_resource).to receive(:jql).and_return([ issue1 ])
 
       result = client.search_issues("project = TEST")
 
-      expect(result).to eq([issue1])
+      expect(result).to eq([ issue1 ])
     end
 
     it "accepts custom fields and expand" do

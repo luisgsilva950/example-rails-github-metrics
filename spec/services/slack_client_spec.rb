@@ -36,19 +36,19 @@ RSpec.describe SlackClient do
     it "returns messages and next_cursor" do
       msg = double("Message", text: "Hello")
       metadata = double("Metadata", next_cursor: "cursor_abc")
-      response = double("Response", messages: [msg], response_metadata: metadata)
+      response = double("Response", messages: [ msg ], response_metadata: metadata)
       allow(web_client).to receive(:conversations_history).and_return(response)
 
       result = client.channel_messages("C123")
 
-      expect(result[:messages]).to eq([msg])
+      expect(result[:messages]).to eq([ msg ])
       expect(result[:next_cursor]).to eq("cursor_abc")
     end
 
     it "handles nil next_cursor" do
       msg = double("Message", text: "Hello")
       metadata = double("Metadata", next_cursor: "")
-      response = double("Response", messages: [msg], response_metadata: metadata)
+      response = double("Response", messages: [ msg ], response_metadata: metadata)
       allow(web_client).to receive(:conversations_history).and_return(response)
 
       result = client.channel_messages("C123")
@@ -87,37 +87,37 @@ RSpec.describe SlackClient do
 
       allow(client).to receive(:channel_messages)
         .with("C123", limit: 200, cursor: nil, oldest: nil, latest: nil)
-        .and_return({ messages: [msg1], next_cursor: "cursor2" })
+        .and_return({ messages: [ msg1 ], next_cursor: "cursor2" })
 
       allow(client).to receive(:channel_messages)
         .with("C123", limit: 200, cursor: "cursor2", oldest: nil, latest: nil)
-        .and_return({ messages: [msg2], next_cursor: nil })
+        .and_return({ messages: [ msg2 ], next_cursor: nil })
 
       result = client.enumerate_channel_messages("C123")
 
-      expect(result).to eq([msg1, msg2])
+      expect(result).to eq([ msg1, msg2 ])
     end
 
     it "respects max_pages limit" do
       msg = double("Message", text: "Only Page")
 
       allow(client).to receive(:channel_messages)
-        .and_return({ messages: [msg], next_cursor: "next" })
+        .and_return({ messages: [ msg ], next_cursor: "next" })
 
       result = client.enumerate_channel_messages("C123", max_pages: 1)
 
-      expect(result).to eq([msg])
+      expect(result).to eq([ msg ])
     end
 
     it "stops when next_cursor is empty string" do
       msg = double("Message", text: "Last page")
 
       allow(client).to receive(:channel_messages)
-        .and_return({ messages: [msg], next_cursor: "" })
+        .and_return({ messages: [ msg ], next_cursor: "" })
 
       result = client.enumerate_channel_messages("C123")
 
-      expect(result).to eq([msg])
+      expect(result).to eq([ msg ])
     end
   end
 

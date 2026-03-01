@@ -12,8 +12,8 @@ RSpec.describe JiraBugsExtractor do
       "summary" => "Bug title for #{key}",
       "created" => "2025-12-01T10:00:00.000+0000",
       "updated" => "2025-12-02T10:00:00.000+0000",
-      "components" => [{ "name" => "Weather" }],
-      "labels" => ["feature:login"],
+      "components" => [ { "name" => "Weather" } ],
+      "labels" => [ "feature:login" ],
       "priority" => { "name" => "High" },
       "issuetype" => { "name" => "Bug" },
       "reporter" => { "displayName" => "Jane Doe" },
@@ -37,7 +37,7 @@ RSpec.describe JiraBugsExtractor do
 
   describe "#call" do
     it "searches issues and saves them" do
-      issues = [build_issue(key: "TEST-1"), build_issue(key: "TEST-2")]
+      issues = [ build_issue(key: "TEST-1"), build_issue(key: "TEST-2") ]
       allow(client).to receive(:search_issues).and_return(issues)
       allow(client).to receive(:fetch_issue).and_return(nil)
 
@@ -50,7 +50,7 @@ RSpec.describe JiraBugsExtractor do
       issue = build_issue(key: "TEST-100")
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      expect { extractor.save_issues([issue]) }.to change(JiraBug, :count).by(1)
+      expect { extractor.save_issues([ issue ]) }.to change(JiraBug, :count).by(1)
 
       bug = JiraBug.find_by(issue_key: "TEST-100")
       expect(bug.title).to eq("Bug title for TEST-100")
@@ -58,7 +58,7 @@ RSpec.describe JiraBugsExtractor do
       expect(bug.team).to eq("Digital Farm")
       expect(bug.status).to eq("10 Done")
       expect(bug.assignee).to eq("john.doe")
-      expect(bug.components).to eq(["Weather"])
+      expect(bug.components).to eq([ "Weather" ])
       expect(bug.root_cause_analysis).to eq("Root cause text")
       expect(bug.development_type).to eq("Backend")
       expect(bug.comments_count).to eq(1)
@@ -69,7 +69,7 @@ RSpec.describe JiraBugsExtractor do
       issue = build_issue(key: "TEST-200", fields: { "summary" => "New title" })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      expect { extractor.save_issues([issue]) }.not_to change(JiraBug, :count)
+      expect { extractor.save_issues([ issue ]) }.not_to change(JiraBug, :count)
 
       bug = JiraBug.find_by(issue_key: "TEST-200")
       expect(bug.title).to eq("New title")
@@ -81,35 +81,35 @@ RSpec.describe JiraBugsExtractor do
 
       expect(Rails.logger).to receive(:error).with(/Falha ao salvar issue/)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
     end
 
     it "normalizes categories via CategoriesNormalizer" do
-      issue = build_issue(key: "TEST-CAT", fields: { "labels" => ["cw_elements_button"] })
+      issue = build_issue(key: "TEST-CAT", fields: { "labels" => [ "cw_elements_button" ] })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-CAT")
       expect(bug.categories).to include("mfe:cw_elements_button")
     end
 
     it "updates JIRA labels when normalization changes categories" do
-      issue = build_issue(key: "TEST-SYNC", fields: { "labels" => ["cw_elements_button"] })
+      issue = build_issue(key: "TEST-SYNC", fields: { "labels" => [ "cw_elements_button" ] })
       jira_issue = double("JiraIssue")
       allow(client).to receive(:fetch_issue).with("TEST-SYNC").and_return(jira_issue)
       allow(jira_issue).to receive(:save)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       expect(jira_issue).to have_received(:save).with(hash_including("fields"))
     end
 
     it "handles JIRA update failure gracefully" do
-      issue = build_issue(key: "TEST-FAIL", fields: { "labels" => ["cw_elements_button"] })
+      issue = build_issue(key: "TEST-FAIL", fields: { "labels" => [ "cw_elements_button" ] })
       allow(client).to receive(:fetch_issue).and_raise(StandardError.new("API error"))
 
-      expect { extractor.save_issues([issue]) }.not_to raise_error
+      expect { extractor.save_issues([ issue ]) }.not_to raise_error
     end
   end
 
@@ -121,7 +121,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-TEAM")
       expect(bug.team).to eq("Fallback Team")
@@ -129,12 +129,12 @@ RSpec.describe JiraBugsExtractor do
 
     it "handles array team field" do
       issue = build_issue(key: "TEST-ATEAM", fields: {
-        "customfield_10265" => [{ "value" => "Team A" }, { "name" => "Team B" }],
+        "customfield_10265" => [ { "value" => "Team A" }, { "name" => "Team B" } ],
         "customfield_10300" => nil
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-ATEAM")
       expect(bug.team).to eq("Team A,Team B")
@@ -147,7 +147,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-STEAM")
       expect(bug.team).to eq("Simple Team")
@@ -159,7 +159,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-RCA")
       expect(bug.root_cause_analysis).to eq("Hash RCA")
@@ -171,7 +171,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-FE")
       expect(bug.development_type).to eq("Frontend")
@@ -183,7 +183,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-INV")
       expect(bug.development_type).to be_nil
@@ -195,7 +195,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-NILDEV")
       expect(bug.development_type).to be_nil
@@ -207,7 +207,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-NOCOM")
       expect(bug.comments_count).to eq(0)
@@ -221,7 +221,7 @@ RSpec.describe JiraBugsExtractor do
       allow(client).to receive(:fetch_issue).and_return(nil)
 
       # Should not raise, but bug may have nil opened_at
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
     end
 
     it "extracts name from displayName field" do
@@ -230,7 +230,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-DN")
       expect(bug.reporter).to eq("Display Reporter")
@@ -242,7 +242,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-EMAIL")
       expect(bug.reporter).to eq("reporter@example.com")
@@ -254,7 +254,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-STR")
       expect(bug.status).to eq("Done")
@@ -267,7 +267,7 @@ RSpec.describe JiraBugsExtractor do
       })
       allow(client).to receive(:fetch_issue).and_return(nil)
 
-      extractor.save_issues([issue])
+      extractor.save_issues([ issue ])
 
       bug = JiraBug.find_by(issue_key: "TEST-RCAFB")
       expect(bug.root_cause_analysis).to eq("Fallback RCA")

@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe MetricsExtractor do
   let(:github_client) { instance_double(GithubClient) }
-  let(:configuration) { instance_double(MetricsConfiguration, team_slugs: [], explicit_repo_names: ["org/repo"]) }
+  let(:configuration) { instance_double(MetricsConfiguration, team_slugs: [], explicit_repo_names: [ "org/repo" ]) }
 
   subject(:extractor) { described_class.new(client: github_client, configuration: configuration) }
 
@@ -22,9 +22,9 @@ RSpec.describe MetricsExtractor do
     end
 
     it "combines team repos and explicit repos" do
-      allow(configuration).to receive(:team_slugs).and_return(["org/team"])
-      allow(configuration).to receive(:explicit_repo_names).and_return(["org/explicit"])
-      allow(github_client).to receive(:repositories_for_team).with("org/team").and_return(["org/team-repo"])
+      allow(configuration).to receive(:team_slugs).and_return([ "org/team" ])
+      allow(configuration).to receive(:explicit_repo_names).and_return([ "org/explicit" ])
+      allow(github_client).to receive(:repositories_for_team).with("org/team").and_return([ "org/team-repo" ])
 
       repo1 = double("Repo", id: 1, full_name: "org/team-repo", language: "Ruby")
       repo2 = double("Repo", id: 2, full_name: "org/explicit", language: "JS")
@@ -55,7 +55,7 @@ RSpec.describe MetricsExtractor do
       )
       commit_data = double("CommitData", sha: "abc123", commit: commit_info)
 
-      allow(github_client).to receive(:commits_for_repo).with("org/repo").and_return([commit_data])
+      allow(github_client).to receive(:commits_for_repo).with("org/repo").and_return([ commit_data ])
 
       repo_data = double("Repo", id: repo_record.github_id, full_name: "org/repo", language: "Ruby")
       allow(github_client).to receive(:repository_details).with("org/repo").and_return(repo_data)
@@ -75,7 +75,7 @@ RSpec.describe MetricsExtractor do
       )
       commit_data = double("CommitData", sha: "existing", commit: commit_info)
 
-      allow(github_client).to receive(:commits_for_repo).with("org/repo").and_return([commit_data])
+      allow(github_client).to receive(:commits_for_repo).with("org/repo").and_return([ commit_data ])
 
       repo_data = double("Repo", id: repo_record.github_id, full_name: "org/repo", language: "Ruby")
       allow(github_client).to receive(:repository_details).with("org/repo").and_return(repo_data)
@@ -94,7 +94,7 @@ RSpec.describe MetricsExtractor do
     it "handles commit with nil commit info" do
       commit_data = double("CommitData", sha: "nil_info", commit: nil)
 
-      allow(github_client).to receive(:commits_for_repo).with("org/repo").and_return([commit_data])
+      allow(github_client).to receive(:commits_for_repo).with("org/repo").and_return([ commit_data ])
       repo_data = double("Repo", id: repo_record.github_id, full_name: "org/repo", language: "Ruby")
       allow(github_client).to receive(:repository_details).with("org/repo").and_return(repo_data)
 
@@ -127,7 +127,7 @@ RSpec.describe MetricsExtractor do
       )
       allow(pr_details).to receive(:respond_to?).and_return(true)
 
-      allow(github_client).to receive(:commits_for_repo).and_return([commit_data])
+      allow(github_client).to receive(:commits_for_repo).and_return([ commit_data ])
       allow(github_client).to receive(:pull_request_details).with("org/repo", 10).and_return(pr_details)
 
       repo_data = double("Repo", id: repo_record.github_id, full_name: "org/repo", language: "Ruby")
@@ -149,7 +149,7 @@ RSpec.describe MetricsExtractor do
       )
       commit_data = double("CommitData", sha: "prsha2", commit: commit_info)
 
-      allow(github_client).to receive(:commits_for_repo).and_return([commit_data])
+      allow(github_client).to receive(:commits_for_repo).and_return([ commit_data ])
 
       repo_data = double("Repo", id: repo_record.github_id, full_name: "org/repo", language: "Ruby")
       allow(github_client).to receive(:repository_details).and_return(repo_data)
@@ -164,7 +164,7 @@ RSpec.describe MetricsExtractor do
       )
       commit_data = double("CommitData", sha: "prsha3", commit: commit_info)
 
-      allow(github_client).to receive(:commits_for_repo).and_return([commit_data])
+      allow(github_client).to receive(:commits_for_repo).and_return([ commit_data ])
       allow(github_client).to receive(:pull_request_details).with("org/repo", 30).and_return(nil)
 
       repo_data = double("Repo", id: repo_record.github_id, full_name: "org/repo", language: "Ruby")
