@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+# Get staged .rb files (only Added, Copied, Modified, Renamed)
+STAGED_RB_FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.rb' | tr '\n' ' ')
+
+if [ -z "$STAGED_RB_FILES" ]; then
+  exit 0
+fi
+
+echo "Running RuboCop auto-correct on staged Ruby files..."
+
+# Auto-correct safe offenses on staged files
+# shellcheck disable=SC2086
+bundle exec rubocop -A --force-exclusion $STAGED_RB_FILES
+
+# Re-stage the corrected files
+# shellcheck disable=SC2086
+git add $STAGED_RB_FILES
+
+echo "RuboCop auto-correct complete."

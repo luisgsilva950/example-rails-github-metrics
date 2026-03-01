@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+HOOKS_DIR="$(git rev-parse --show-toplevel)/.githooks"
+GIT_HOOKS_DIR="$(git rev-parse --git-dir)/hooks"
+
+if [ ! -d "$HOOKS_DIR" ]; then
+  echo "No .githooks directory found."
+  exit 1
+fi
+
+echo "Installing git hooks from .githooks/ ..."
+
+for hook in "$HOOKS_DIR"/*; do
+  hook_name=$(basename "$hook")
+  cp "$hook" "$GIT_HOOKS_DIR/$hook_name"
+  chmod +x "$GIT_HOOKS_DIR/$hook_name"
+  echo "  ✓ $hook_name"
+done
+
+echo "Git hooks installed successfully."
