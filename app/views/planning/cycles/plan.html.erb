@@ -118,7 +118,20 @@
   <%# ── GANTT CHART (hero) ─────────────── %>
   <%# ═══════════════════════════════════════ %>
   <% if @capacities.any? && work_days.any? %>
-    <div class="pln-gantt-section">
+    <div class="pln-gantt-section" data-controller="gantt-expand">
+      <div class="pln-gantt-header">
+        <h2 class="pln-gantt-header__title">Planning Chart</h2>
+        <div class="pln-gantt-header__actions">
+          <button type="button" class="pln-action-btn pln-action-btn--ghost" data-action="click->gantt-expand#download">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM3.75 13a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"/></svg>
+            Download PNG
+          </button>
+          <button type="button" class="pln-action-btn pln-action-btn--ghost" data-action="click->gantt-expand#toggle" data-gantt-expand-target="btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 2h3.5a.75.75 0 010 1.5H4.56l2.72 2.72a.75.75 0 01-1.06 1.06L3.5 4.56v1.69a.75.75 0 01-1.5 0v-3.5A.75.75 0 012.75 2zm10.5 0h-3.5a.75.75 0 000 1.5h1.69l-2.72 2.72a.75.75 0 001.06 1.06l2.72-2.72v1.69a.75.75 0 001.5 0v-3.5A.75.75 0 0013.25 2zM2.75 14h3.5a.75.75 0 000-1.5H4.56l2.72-2.72a.75.75 0 00-1.06-1.06L3.5 11.44V9.75a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75zm10.5 0h-3.5a.75.75 0 010-1.5h1.69l-2.72-2.72a.75.75 0 011.06-1.06l2.72 2.72V9.75a.75.75 0 011.5 0v3.5a.75.75 0 01-.75.75z"/></svg>
+            <span data-gantt-expand-target="label">Expand</span>
+          </button>
+        </div>
+      </div>
       <div class="gantt-wrap"
            data-controller="gantt-drag gantt-click"
            data-gantt-drag-cycle-id-value="<%= @cycle.id %>"
