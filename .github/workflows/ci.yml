@@ -94,12 +94,18 @@ jobs:
         env:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test
+          CACHE_DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test_cache
+          QUEUE_DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test_queue
+          CABLE_DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test_cable
         run: bin/rails db:test:prepare
 
       - name: Run RSpec tests
         env:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test
+          CACHE_DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test_cache
+          QUEUE_DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test_queue
+          CABLE_DATABASE_URL: postgres://postgres:postgres@localhost:5432/example_rails_github_metrics_test_cable
           CI: true
         run: bundle exec rspec --format progress --format documentation --out tmp/rspec_results.txt
 
