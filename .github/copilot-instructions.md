@@ -1,0 +1,1 @@
+Follow CLAUDE.md as the coding style guide for this Rails project. Adhere to the principles of simplicity, single responsibility, and dependency injection as outlined in the guide. Ensure that all classes, methods, and controllers follow the specified rules regarding length and parameters. When deviating from these rules, provide explicit justification in code comments.

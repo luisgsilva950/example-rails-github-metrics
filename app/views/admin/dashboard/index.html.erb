@@ -1,0 +1,30 @@
+<div class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <div>
+      <p class="admin-dashboard__eyebrow">Central de dados</p>
+      <h1>Admin Console</h1>
+      <p>Selecione um recurso para visualizar os registros mais recentes.</p>
+    </div>
+    <%= link_to "Ver saúde da aplicação", rails_health_check_path, class: "admin-link" %>
+  </header>
+
+  <section class="admin-dashboard__grid">
+    <% @model_registry.each do |key, model_class| %>
+      <article class="admin-dashboard-card">
+        <div class="admin-dashboard-card__body">
+          <h2><%= model_class.model_name.human(count: :many) %></h2>
+          <p>Explorar registros armazenados para este recurso.</p>
+        </div>
+        <%= link_to "Abrir registros", admin_records_path(model: key), class: "admin-dashboard-card__link" %>
+      </article>
+    <% end %>
+
+    <article class="admin-dashboard-card admin-dashboard-card--accent">
+      <div class="admin-dashboard-card__body">
+        <h2>Analytics</h2>
+        <p>Filtre autores normalizados e veja quem mais abriu pull requests.</p>
+      </div>
+      <%= link_to "Abrir analytics", admin_analytics_path, class: "admin-dashboard-card__link" %>
+    </article>
+  </section>
+</div>

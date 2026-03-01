@@ -1,0 +1,44 @@
+<%= form_with(model: developer, url: url, method: method, class: "planning-form") do |f| %>
+  <% if developer.errors.any? %>
+    <div class="planning-form__errors">
+      <p><strong><%= pluralize(developer.errors.count, "error") %> prevented this developer from being saved:</strong></p>
+      <ul>
+        <% developer.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="planning-form__field">
+    <%= f.label :name, "Full Name" %>
+    <%= f.text_field :name, placeholder: "e.g. Jane Doe", autofocus: true %>
+  </div>
+
+  <div class="planning-form__field">
+    <%= f.label :team_id, "Team" %>
+    <%= f.collection_select :team_id, teams, :id, :name, { prompt: "Select a team" } %>
+  </div>
+
+  <div class="planning-form__row">
+    <div class="planning-form__field">
+      <%= f.label :domain_stack, "Domain Stack" %>
+      <%= f.select :domain_stack, Developer::DOMAIN_STACKS.map { |s| [s.titleize, s] }, { prompt: "Select stack" } %>
+    </div>
+
+    <div class="planning-form__field">
+      <%= f.label :seniority, "Seniority" %>
+      <%= f.select :seniority, Developer::SENIORITIES.map { |s| [s.titleize, s] }, { prompt: "Select seniority" } %>
+    </div>
+  </div>
+
+  <div class="planning-form__field">
+    <%= f.label :productivity_factor, "Productivity Factor (0.0 – 1.0)" %>
+    <%= f.number_field :productivity_factor, step: 0.05, min: 0.0, max: 1.0, placeholder: "e.g. 0.80" %>
+    <small class="planning-form__hint">Percentage of gross hours that translates to real capacity. E.g. 0.80 = 80%.</small>
+  </div>
+
+  <div class="planning-form__actions">
+    <%= f.submit submit_label, class: "planning-btn planning-btn--primary" %>
+  </div>
+<% end %>

@@ -1,0 +1,445 @@
+<% content_for(:title) { "Bugs Over Time" } %>
+<% content_for(:head) do %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+<% end %>
+
+<style>
+  .over-time {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+  }
+  .over-time__header { margin-bottom: 1.5rem; }
+  .over-time__header h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.25rem; }
+  .over-time__header p { color: #64748b; margin: 0; font-size: 0.95rem; }
+  .over-time__filters {
+    display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;
+    margin-bottom: 1.5rem; padding: 1rem;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+  }
+  .over-time__field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .over-time__field label { font-size: 0.8rem; font-weight: 500; color: #475569; }
+  .over-time__btn {
+    padding: 0.5rem 1.2rem; background: #2563eb; color: #fff; border: none;
+    border-radius: 0.5rem; font-size: 0.875rem; cursor: pointer; font-weight: 500;
+    transition: background 0.15s;
+  }
+  .over-time__btn:hover { background: #1d4ed8; }
+  .over-time__chart-wrapper {
+    position: relative; width: 100%; background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.25rem;
+    min-height: 420px;
+  }
+  .over-time__empty {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: #94a3b8; font-size: 0.95rem;
+  }
+  .over-time__section-title {
+    font-size: 1.1rem; font-weight: 600; margin: 2rem 0 1rem; color: #0f172a;
+    padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0;
+  }
+  .over-time__two-col {
+    display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem;
+    align-items: start;
+  }
+  @media (max-width: 768px) { .over-time__two-col { grid-template-columns: 1fr; } }
+  .over-time__pie-wrapper {
+    position: relative; background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.25rem;
+    height: 380px;
+  }
+  .over-time__stats-wrap {
+    overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+  }
+  .over-time__stats {
+    width: 100%; border-collapse: collapse; font-size: 0.85rem;
+  }
+  .over-time__stats th {
+    text-align: left; padding: 0.55rem 0.75rem; background: #f1f5f9;
+    font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .over-time__stats td {
+    padding: 0.5rem 0.75rem; border-bottom: 1px solid #f1f5f9;
+  }
+  .over-time__stats tr:hover td { background: #f8fafc; }
+  .over-time__stats .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .over-time__bar-bg {
+    height: 6px; border-radius: 3px; background: #e2e8f0; min-width: 60px;
+  }
+  .over-time__bar-fill {
+    height: 100%; border-radius: 3px; background: #3b82f6;
+  }
+  .over-time__group-toggle {
+    display: flex; gap: 0; border: 1.5px solid #e2e8f0; border-radius: 0.5rem; overflow: hidden;
+  }
+  .over-time__group-opt {
+    padding: 0.45rem 0.9rem; font-size: 0.8rem; font-weight: 500;
+    cursor: pointer; border: none; background: #fff; color: #64748b;
+    transition: background 0.15s, color 0.15s;
+  }
+  .over-time__group-opt:not(:last-child) { border-right: 1.5px solid #e2e8f0; }
+  .over-time__group-opt:hover { background: #f1f5f9; color: #1e293b; }
+  .over-time__group-opt--active {
+    background: #eff6ff; color: #1e40af; font-weight: 600;
+  }
+  .over-time__group-opt--active:hover { background: #dbeafe; }
+  .over-time__hint { font-size: 0.7rem; color: #94a3b8; margin-top: 0.15rem; }
+</style>
+
+<%= render 'metrics/jira_bugs/topbar' %>
+
+<div class="over-time">
+  <header class="over-time__header">
+    <h1>Bugs Over Time</h1>
+    <p>Number of "Done" bugs grouped by time period. Total: <strong><%= @total_bugs %></strong> bugs.</p>
+  </header>
+
+  <%= form_tag(metrics_jira_bugs_over_time_path, method: :get, class: "over-time__filters") do %>
+    <div class="over-time__field">
+      <label>Group by</label>
+      <div class="over-time__group-toggle">
+        <% %w[daily weekly monthly].each do |g| %>
+          <button type="submit" name="group_by" value="<%= g %>"
+                  class="over-time__group-opt<%= ' over-time__group-opt--active' if @group_by == g %>">
+            <%= g.capitalize %>
+          </button>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="over-time__field">
+      <label for="start_date">From</label>
+      <input type="date" name="start_date" id="start_date" value="<%= @start_date %>">
+    </div>
+
+    <div class="over-time__field">
+      <label for="end_date">To</label>
+      <input type="date" name="end_date" id="end_date" value="<%= @end_date %>">
+    </div>
+
+    <div class="over-time__field">
+      <label for="team">Team</label>
+      <input type="text" name="team" id="team" value="<%= @team %>" placeholder="e.g. Digital Farm">
+    </div>
+
+    <div class="over-time__field">
+      <label for="category_filter">Category</label>
+      <select name="category_filter" id="category_filter">
+        <option value="">All</option>
+        <% @available_categories.each do |cat| %>
+          <option value="<%= cat %>" <%= "selected" if @category_filter == cat %>><%= cat %></option>
+        <% end %>
+      </select>
+    </div>
+
+    <div class="over-time__field">
+      <label for="group_by_category">Group by Category</label>
+      <select name="group_by_category" id="group_by_category">
+        <option value="">None (total)</option>
+        <% JiraBug::CATEGORY_PREFIXES.each do |prefix| %>
+          <option value="<%= prefix %>" <%= "selected" if @group_by_category == prefix %>><%= prefix %></option>
+        <% end %>
+      </select>
+    </div>
+
+    <div class="over-time__field">
+      <label for="ot_sub_categories">Sub Category</label>
+      <select name="sub_category" id="ot_sub_categories">
+        <option value="">None</option>
+        <% JiraBug::CATEGORY_PREFIXES.each do |prefix| %>
+          <option value="<%= prefix %>" <%= "selected" if @sub_category == prefix %>><%= prefix %></option>
+        <% end %>
+      </select>
+    </div>
+
+    <div class="over-time__field">
+      <label for="top_n">Limit</label>
+      <select name="top_n" id="top_n">
+        <option value="">All</option>
+        <option value="5" <%= "selected" if @top_n == 5 %>>Top 5</option>
+        <option value="10" <%= "selected" if @top_n == 10 %>>Top 10</option>
+        <option value="15" <%= "selected" if @top_n == 15 %>>Top 15</option>
+        <option value="20" <%= "selected" if @top_n == 20 %>>Top 20</option>
+      </select>
+    </div>
+
+    <!-- Hidden field to preserve group_by when using Apply -->
+    <input type="hidden" name="group_by" value="<%= @group_by %>">
+    <button type="submit" class="over-time__btn">Apply</button>
+  <% end %>
+
+  <% if @chart_labels.any? %>
+    <div class="over-time__chart-wrapper">
+      <canvas id="overTimeChart"></canvas>
+    </div>
+
+    <script>
+      (function initOverTimeChart() {
+        if (typeof Chart === "undefined") { setTimeout(initOverTimeChart, 50); return; }
+        var canvas = document.getElementById("overTimeChart");
+        if (!canvas) return;
+        var ctx = canvas.getContext("2d");
+
+        var COLORS = [
+          "#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6",
+          "#ec4899", "#06b6d4", "#f97316", "#6366f1", "#14b8a6",
+          "#e11d48", "#84cc16", "#0ea5e9", "#a855f7", "#d946ef",
+          "#64748b", "#22c55e", "#eab308", "#2563eb", "#dc2626"
+        ];
+
+        <% if @chart_datasets %>
+          var datasets = <%= @chart_datasets.to_json.html_safe %>;
+          var chartDatasets = datasets
+            .filter(function(ds) { return ds.values.some(function(v) { return v > 0; }); })
+            .map(function(ds, i) {
+            var color = COLORS[i % COLORS.length];
+            return {
+              label: ds.name,
+              data: ds.values,
+              borderColor: color,
+              backgroundColor: color + "14",
+              fill: false,
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              pointBackgroundColor: color,
+              pointBorderColor: "#fff",
+              pointBorderWidth: 1.5,
+              borderWidth: 2
+            };
+          });
+        <% else %>
+          var chartDatasets = [{
+            label: "Bugs",
+            data: <%= (@chart_values || []).to_json %>,
+            borderColor: "#3b82f6",
+            backgroundColor: "rgba(59, 130, 246, 0.08)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: "#3b82f6",
+            pointBorderColor: "#fff",
+            pointBorderWidth: 2,
+            borderWidth: 2.5
+          }];
+        <% end %>
+
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: <%= @display_labels.to_json.html_safe %>,
+            datasets: chartDatasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            plugins: {
+              legend: {
+                display: <%= @chart_datasets ? "true" : "false" %>,
+                position: "bottom",
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: "circle",
+                  padding: 16,
+                  font: { size: 11 }
+                },
+                onClick: function(e, legendItem, legend) {
+                  var chart = legend.chart;
+                  var ci = legendItem.datasetIndex;
+                  var meta = chart.getDatasetMeta(ci);
+                  var allVisible = chart.data.datasets.every(function(ds, i) {
+                    return !chart.getDatasetMeta(i).hidden;
+                  });
+
+                  if (allVisible) {
+                    chart.data.datasets.forEach(function(ds, i) {
+                      chart.getDatasetMeta(i).hidden = i !== ci;
+                    });
+                  } else if (meta.hidden) {
+                    meta.hidden = false;
+                  } else {
+                    var visibleCount = chart.data.datasets.filter(function(ds, i) {
+                      return !chart.getDatasetMeta(i).hidden;
+                    }).length;
+                    if (visibleCount <= 1) {
+                      chart.data.datasets.forEach(function(ds, i) {
+                        chart.getDatasetMeta(i).hidden = false;
+                      });
+                    } else {
+                      meta.hidden = true;
+                    }
+                  }
+                  chart.update();
+                }
+              },
+              tooltip: {
+                backgroundColor: "#1e293b",
+                titleFont: { size: 13, weight: "600" },
+                bodyFont: { size: 12 },
+                padding: 10,
+                cornerRadius: 8,
+                itemSort: function(a, b) { return b.parsed.y - a.parsed.y; },
+                callbacks: {
+                  label: function(ctx) {
+                    if (ctx.parsed.y === 0) return null;
+                    return ctx.dataset.label + ": " + ctx.parsed.y + " bugs";
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: "#64748b", font: { size: 11 }, maxRotation: 45 }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: "#f1f5f9" },
+                ticks: {
+                  color: "#64748b",
+                  font: { size: 11 },
+                  stepSize: 1,
+                  precision: 0
+                }
+              }
+            }
+          }
+        });
+      })();
+    </script>
+
+    <% if @pie_data.present? %>
+      <h2 class="over-time__section-title">Distribution by <%= @group_by_category %></h2>
+      <div class="over-time__two-col">
+        <div class="over-time__pie-wrapper">
+          <canvas id="pieChart"></canvas>
+        </div>
+        <div class="over-time__stats-wrap">
+          <table class="over-time__stats">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Category</th>
+                <th class="num">Count</th>
+                <th class="num">%</th>
+                <th>Distribution</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @pie_data.each_with_index do |item, idx| %>
+                <% pct = @total_bugs > 0 ? (item[:count] * 100.0 / @total_bugs).round(1) : 0 %>
+                <% combo_cats = item[:name].split(" + ") %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td>
+                    <a href="<%= metrics_jira_bugs_all_path(
+                      team: @team,
+                      start_date: @start_date,
+                      end_date: @end_date,
+                      status: "10 Done",
+                      categories_filter: combo_cats
+                    ) %>" style="color: #2563eb; text-decoration: none; font-weight: 600;">
+                      <%= item[:name] %>
+                    </a>
+                  </td>
+                  <td class="num"><%= item[:count] %></td>
+                  <td class="num"><%= pct %>%</td>
+                  <td>
+                    <div class="over-time__bar-bg">
+                      <div class="over-time__bar-fill" style="width: <%= pct %>%"></div>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <script>
+        (function initPieChart() {
+          if (typeof Chart === "undefined") { setTimeout(initPieChart, 50); return; }
+          var canvas = document.getElementById("pieChart");
+          if (!canvas) return;
+
+          var PIE_COLORS = [
+            "#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6",
+            "#ec4899", "#06b6d4", "#f97316", "#6366f1", "#14b8a6",
+            "#e11d48", "#84cc16", "#0ea5e9", "#a855f7", "#d946ef",
+            "#64748b", "#22c55e", "#eab308", "#2563eb", "#dc2626"
+          ];
+
+          var pieData = <%= @pie_data.to_json.html_safe %>;
+          var labels = pieData.map(function(d) { return d.name; });
+          var values = pieData.map(function(d) { return d.count; });
+          var colors = labels.map(function(_, i) { return PIE_COLORS[i % PIE_COLORS.length]; });
+
+          new Chart(canvas.getContext("2d"), {
+            type: "doughnut",
+            data: {
+              labels: labels,
+              datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: "45%",
+              plugins: {
+                legend: {
+                  display: true,
+                  position: "bottom",
+                  labels: {
+                    usePointStyle: true,
+                    pointStyle: "circle",
+                    padding: 12,
+                    font: { size: 10.5 }
+                  }
+                },
+                tooltip: {
+                  backgroundColor: "#1e293b",
+                  titleFont: { size: 13, weight: "600" },
+                  bodyFont: { size: 12 },
+                  padding: 10,
+                  cornerRadius: 8,
+                  callbacks: {
+                    label: function(ctx) {
+                      var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                      var pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                      return ctx.label + ": " + ctx.parsed + " bugs (" + pct + "%)";
+                    }
+                  }
+                }
+              }
+            }
+          });
+        })();
+      </script>
+    <% end %>
+
+  <% else %>
+    <div class="over-time__empty">No data found for the selected filters.</div>
+  <% end %>
+</div>
+
+<script>
+  document.getElementById("group_by_category").addEventListener("change", function() {
+    var subSelect = document.getElementById("ot_sub_categories");
+    if (subSelect) {
+      for (var i = 0; i < subSelect.options.length; i++) {
+        subSelect.options[i].selected = false;
+      }
+    }
+    this.closest("form").submit();
+  });
+</script>

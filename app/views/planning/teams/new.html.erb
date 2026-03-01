@@ -1,0 +1,20 @@
+<% content_for(:title) { "New Team — Capacity Planning" } %>
+
+<div class="planning-layout">
+  <header class="planning-header">
+    <div>
+      <p class="planning-header__eyebrow">Management</p>
+      <h1>New Team</h1>
+      <p>Register a new team for capacity planning.</p>
+    </div>
+    <%= link_to "Back to Teams", planning_teams_path, class: "planning-btn" %>
+  </header>
+
+  <section class="planning-form-card">
+    <%= render "planning/teams/form",
+              team: @team,
+              url: planning_teams_path,
+              method: :post,
+              submit_label: "Create Team" %>
+  </section>
+</div>

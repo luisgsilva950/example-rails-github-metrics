@@ -1,0 +1,199 @@
+<% content_for(:title) { "#{@developer.name} — Capacity Planning" } %>
+
+<div class="planning-layout">
+  <header class="planning-header">
+    <div>
+      <p class="planning-header__eyebrow">Developer Profile</p>
+      <h1><%= @developer.name %></h1>
+      <p><%= @developer.team.name %></p>
+    </div>
+    <div class="planning-header__actions">
+      <%= link_to "Edit", edit_planning_developer_path(@developer), class: "planning-btn planning-btn--primary" %>
+      <%= link_to "Back to Developers", planning_developers_path, class: "planning-btn" %>
+    </div>
+  </header>
+
+  <%# ── Developer Details ── %>
+  <section class="planning-detail-grid">
+    <div class="planning-detail-card">
+      <p class="planning-detail-card__label">Domain Stack</p>
+      <p class="planning-detail-card__value"><%= @developer.domain_stack.titleize %></p>
+    </div>
+    <div class="planning-detail-card">
+      <p class="planning-detail-card__label">Seniority</p>
+      <p class="planning-detail-card__value"><%= @developer.seniority.titleize %></p>
+    </div>
+    <div class="planning-detail-card planning-detail-card--productivity">
+      <p class="planning-detail-card__label">Productivity Factor</p>
+      <% pct = (@developer.productivity_factor * 100).round %>
+      <% level = pct >= 70 ? "high" : pct >= 40 ? "medium" : "low" %>
+      <div class="planning-productivity">
+        <span class="planning-productivity__label planning-productivity__label--<%= level %>"><%= pct %>%</span>
+        <div class="planning-productivity__bar">
+          <div class="planning-productivity__fill planning-productivity__fill--<%= level %>" style="width: <%= pct %>%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="planning-detail-card">
+      <p class="planning-detail-card__label">Team</p>
+      <p class="planning-detail-card__value"><%= @developer.team.name %></p>
+    </div>
+  </section>
+
+  <%# ── Cycle Capacities ── %>
+  <section class="planning-section">
+    <h2 class="planning-section__title">Cycle Capacities</h2>
+
+    <% capacities = @developer.developer_cycle_capacities.includes(:cycle) %>
+    <% if capacities.any? %>
+      <div class="planning-table-wrap">
+        <table class="planning-table">
+          <thead>
+            <tr>
+              <th>Cycle</th>
+              <th>Period</th>
+              <th>Gross Hours</th>
+              <th>Real Capacity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% capacities.each do |cap| %>
+              <tr>
+                <td data-label="Cycle"><strong><%= cap.cycle.name %></strong></td>
+                <td data-label="Period"><%= cap.cycle.start_date.strftime("%b %d") %> – <%= cap.cycle.end_date.strftime("%b %d, %Y") %></td>
+                <td data-label="Gross Hours"><%= cap.gross_hours %>h</td>
+                <td data-label="Real Capacity"><strong><%= cap.real_capacity %>h</strong></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="planning-empty">No cycle capacities assigned yet.</p>
+    <% end %>
+  </section>
+
+  <%# ── Deliverable Allocations ── %>
+  <section class="planning-section">
+    <h2 class="planning-section__title">Deliverable Allocations</h2>
+
+    <% if @allocations.any? %>
+      <div class="planning-table-wrap">
+        <table class="planning-table">
+          <thead>
+            <tr>
+              <th>Deliverable</th>
+              <th>Team</th>
+              <th>Cycle</th>
+              <th>Stack</th>
+              <th>Allocated Hours</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @allocations.each do |alloc| %>
+              <tr>
+                <td data-label="Deliverable">
+                  <strong><%= alloc.deliverable.title %></strong>
+                  <% if alloc.deliverable.jira_link.present? %>
+                    <br><a href="<%= alloc.deliverable.jira_link %>" target="_blank" rel="noopener" class="planning-link--external">Jira ↗</a>
+                  <% end %>
+                </td>
+                <td data-label="Team"><%= alloc.deliverable.team.name %></td>
+                <td data-label="Cycle">
+                  <% if alloc.deliverable.cycle %>
+                    <%= alloc.deliverable.cycle.name %>
+                  <% else %>
+                    <span class="planning-badge planning-badge--warning">Backlog</span>
+                  <% end %>
+                </td>
+                <td data-label="Stack"><span class="planning-badge planning-badge--neutral"><%= alloc.deliverable.specific_stack.titleize %></span></td>
+                <td data-label="Allocated"><strong><%= alloc.allocated_hours %>h</strong></td>
+                <td data-label="Status">
+                  <span class="planning-badge planning-badge--<%= alloc.deliverable.status == 'done' ? 'success' : 'info' %>">
+                    <%= alloc.deliverable.status.titleize %>
+                  </span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="planning-detail-grid" style="margin-top: 1rem;">
+        <div class="planning-detail-card planning-detail-card--accent">
+          <p class="planning-detail-card__label">Total Allocated</p>
+          <p class="planning-detail-card__value"><%= @allocations.sum(&:allocated_hours) %>h</p>
+        </div>
+      </div>
+    <% else %>
+      <p class="planning-empty">No deliverable allocations yet.</p>
+    <% end %>
+  </section>
+
+  <%# ── Absences ── %>
+  <section class="planning-section">
+    <h2 class="planning-section__title">Absences</h2>
+
+    <div class="planning-inline-form">
+      <%= form_with(
+            url: planning_developer_absences_path(@developer),
+            method: :post,
+            local: true,
+            class: "planning-inline-form__row"
+          ) do %>
+        <div class="planning-inline-form__field">
+          <label for="absence_start_date">From</label>
+          <input type="date" name="absence[start_date]" id="absence_start_date" required>
+        </div>
+        <div class="planning-inline-form__field">
+          <label for="absence_end_date">To</label>
+          <input type="date" name="absence[end_date]" id="absence_end_date" required>
+        </div>
+        <div class="planning-inline-form__field">
+          <label for="absence_reason">Reason</label>
+          <input type="text" name="absence[reason]" id="absence_reason" placeholder="Vacation, sick leave…">
+        </div>
+        <button type="submit" class="planning-btn planning-btn--primary planning-btn--small">Add</button>
+      <% end %>
+    </div>
+
+    <% if @absences.any? %>
+      <div class="planning-table-wrap">
+        <table class="planning-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Days</th>
+              <th>Hours</th>
+              <th>Reason</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @absences.each do |absence| %>
+              <tr>
+                <td data-label="Period"><%= absence.start_date.strftime("%b %d") %> – <%= absence.end_date.strftime("%b %d, %Y") %></td>
+                <td data-label="Days"><%= absence.work_days %></td>
+                <td data-label="Hours"><strong><%= absence.hours %>h</strong></td>
+                <td data-label="Reason"><%= absence.reason.presence || "—" %></td>
+                <td>
+                  <%= form_with(
+                        url: planning_developer_absence_path(@developer, absence),
+                        method: :delete,
+                        local: true,
+                        class: "planning-inline-delete"
+                      ) do %>
+                    <button type="submit" class="planning-btn planning-btn--small planning-btn--danger">Remove</button>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="planning-empty">No absences registered.</p>
+    <% end %>
+  </section>
+</div>

@@ -1,0 +1,175 @@
+<% content_for(:title) { "All Bugs" } %>
+
+<style>
+  .all-bugs {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+  }
+  .all-bugs__header { margin-bottom: 1.5rem; }
+  .all-bugs__header h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.25rem; }
+  .all-bugs__header p { color: #64748b; margin: 0; font-size: 0.95rem; }
+  .all-bugs__filters {
+    display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;
+    margin-bottom: 1.5rem; padding: 1rem;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+  }
+  .all-bugs__field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .all-bugs__field label { font-size: 0.8rem; font-weight: 500; color: #475569; }
+  .all-bugs__btn {
+    padding: 0.45rem 1rem; background: #2563eb; color: #fff; border: none;
+    border-radius: 0.375rem; font-size: 0.875rem; cursor: pointer; font-weight: 500;
+  }
+  .all-bugs__btn:hover { background: #1d4ed8; }
+  .all-bugs__table-wrap {
+    overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+  }
+  .all-bugs__table {
+    width: 100%; border-collapse: collapse; font-size: 0.875rem;
+  }
+  .all-bugs__table th {
+    text-align: left; padding: 0.6rem 0.75rem; background: #f1f5f9;
+    font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .all-bugs__table td {
+    padding: 0.55rem 0.75rem; border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+  }
+  .all-bugs__table tr:hover td { background: #f8fafc; }
+  .all-bugs__table a {
+    color: #2563eb; text-decoration: none; font-weight: 500;
+  }
+  .all-bugs__table a:hover { text-decoration: underline; }
+  .all-bugs__tag {
+    display: inline-block; padding: 0.15rem 0.45rem; margin: 0.1rem 0.15rem;
+    font-size: 0.72rem; border-radius: 0.25rem; font-weight: 500;
+    background: #e0e7ff; color: #3730a3;
+  }
+  .all-bugs__tag--dev-type { background: #f1f5f9; color: #334155; }
+  .all-bugs__tag--component { background: #fff7ed; color: #9a3412; }
+  .all-bugs__tag--status { background: #dbeafe; color: #1e40af; }
+  .all-bugs__empty {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: #94a3b8; font-size: 0.95rem;
+  }
+  .all-bugs__date { white-space: nowrap; color: #64748b; font-size: 0.8rem; }
+</style>
+
+<%= render 'metrics/jira_bugs/topbar' %>
+
+<div class="all-bugs">
+  <header class="all-bugs__header">
+    <h1>All Bugs</h1>
+    <p>Listing all bugs. Total: <strong><%= @total %></strong> bugs.
+      <% if @categories_filter.any? %>
+        Filtered by: <strong><%= @categories_filter.join(" + ") %></strong>
+      <% end %>
+    </p>
+  </header>
+
+  <div class="all-bugs__filters">
+    <%= form_tag(metrics_jira_bugs_all_path, method: :get, style: "display:contents;") do %>
+      <div class="all-bugs__field">
+        <label for="start_date">From</label>
+        <input type="date" name="start_date" id="start_date" value="<%= @start_date %>">
+      </div>
+      <div class="all-bugs__field">
+        <label for="end_date">To</label>
+        <input type="date" name="end_date" id="end_date" value="<%= @end_date %>">
+      </div>
+      <div class="all-bugs__field">
+        <label for="team">Team</label>
+        <input type="text" name="team" id="team" value="<%= @team %>" placeholder="e.g. Digital Farm">
+      </div>
+      <div class="all-bugs__field">
+        <label for="status">Status</label>
+        <select name="status" id="status">
+          <option value="">All</option>
+          <% @statuses.each do |s| %>
+            <option value="<%= s %>" <%= "selected" if @status == s %>><%= s %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="all-bugs__field">
+        <label for="missing_category">Missing category</label>
+        <select name="missing_category" id="missing_category">
+          <option value="">—</option>
+          <% JiraBug::CATEGORY_PREFIXES.each do |prefix| %>
+            <option value="<%= prefix %>" <%= "selected" if @missing_category == prefix %>><%= prefix %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="all-bugs__field" style="align-self: center; padding-top: 1.1rem;">
+        <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.82rem; white-space: nowrap;">
+          <input type="hidden" name="feature_without_project" value="0">
+          <input type="checkbox" name="feature_without_project" value="1" <%= "checked" if @feature_without_project %>>
+          Feature without Project
+        </label>
+      </div>
+      <div class="all-bugs__field" style="align-self: center; padding-top: 1.1rem;">
+        <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.82rem; white-space: nowrap;">
+          <input type="hidden" name="no_categories" value="0">
+          <input type="checkbox" name="no_categories" value="1" <%= "checked" if @no_categories %>>
+          No categories
+        </label>
+      </div>
+      <button type="submit" class="all-bugs__btn">Apply</button>
+    <% end %>
+  </div>
+
+  <% if @bugs.any? %>
+    <div class="all-bugs__table-wrap">
+      <table class="all-bugs__table">
+        <thead>
+          <tr>
+            <th>Issue Key</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Categories</th>
+            <th>Dev Type</th>
+            <th>Components</th>
+            <th>Opened At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @bugs.each do |bug| %>
+            <tr>
+              <td>
+                <a href="<%= bug[:jira_link] %>" target="_blank" rel="noopener">
+                  <%= bug[:issue_key] %>
+                </a>
+              </td>
+              <td><%= bug[:title] %></td>
+              <td>
+                <span class="all-bugs__tag all-bugs__tag--status"><%= bug[:status] %></span>
+              </td>
+              <td>
+                <% Array(bug[:categories]).each do |cat| %>
+                  <span class="all-bugs__tag"><%= cat %></span>
+                <% end %>
+              </td>
+              <td>
+                <% if bug[:development_type].present? %>
+                  <span class="all-bugs__tag all-bugs__tag--dev-type"><%= bug[:development_type] %></span>
+                <% end %>
+              </td>
+              <td>
+                <% bug[:components].each do |comp| %>
+                  <span class="all-bugs__tag all-bugs__tag--component"><%= comp %></span>
+                <% end %>
+              </td>
+              <td>
+                <span class="all-bugs__date"><%= bug[:opened_at]&.in_time_zone("America/Sao_Paulo")&.strftime("%d/%m/%Y") %></span>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="all-bugs__empty">No bugs found for the selected filters.</div>
+  <% end %>
+</div>

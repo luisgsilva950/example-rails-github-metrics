@@ -1,0 +1,76 @@
+<div class="admin-records-layout">
+  <header class="admin-records-header">
+    <div>
+      <h1><%= @model.model_name.human(count: :many) %></h1>
+      <p>Mostrando até 50 registros ordenados pelos mais recentes.</p>
+    </div>
+    <div>
+      <%= link_to "Voltar para o dashboard", admin_root_path, class: "admin-link" %>
+    </div>
+  </header>
+
+  <% if @supports_name_filter || @supports_normalized_author_filter %>
+    <section class="admin-records-filter">
+      <%= form_with url: admin_records_path(model: params[:model]), method: :get, local: true, class: "filter-form" do |form| %>
+        <% if @supports_name_filter %>
+          <div class="filter-field">
+            <%= form.label :q, "Filtrar por nome" %>
+            <%= form.text_field :q, value: params[:q], placeholder: "Digite parte do nome" %>
+          </div>
+        <% end %>
+
+        <% if @supports_normalized_author_filter %>
+          <div class="filter-field filter-checkboxes">
+            <div class="filter-field-header">
+              <%= form.label :normalized_author_names, "Autores normalizados" %>
+              <small>Selecione um ou mais autores</small>
+            </div>
+            <div class="filter-checkbox-grid">
+              <% @normalized_author_options.each do |author| %>
+                <label class="filter-checkbox">
+                  <%= check_box_tag "normalized_author_names[]", author, Array(params[:normalized_author_names]).include?(author) %>
+                  <span><%= author %></span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="filter-form-actions">
+          <%= form.submit "Aplicar" %>
+          <% if params[:q].present? || params[:normalized_author_names].present? %>
+            <%= link_to "Limpar", admin_records_path(model: params[:model]), class: "admin-link" %>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+
+  <section class="admin-records-table">
+    <table>
+      <thead>
+        <tr>
+          <% @columns.each do |column| %>
+            <th><%= column.titleize %></th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% @records.each do |record| %>
+          <tr>
+            <% @columns.each do |column| %>
+              <% value = record.public_send(column) %>
+              <td data-label="<%= column.titleize %>">
+                <% if column == "id" %>
+                  <%= link_to value, admin_record_path(model: params[:model], id: record.id) %>
+                <% else %>
+                  <%= value.present? ? value : "-" %>
+                <% end %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+</div>

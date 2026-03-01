@@ -1,0 +1,95 @@
+<style>
+  .jira-topbar {
+    background: #fff;
+    padding: 0.5rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid #e5e7eb;
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.92);
+  }
+  .jira-topbar__brand {
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.5rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: background 0.15s;
+  }
+  .jira-topbar__brand:hover { background: #f1f5f9; }
+  .jira-topbar__brand svg { width: 18px; height: 18px; fill: #3b82f6; }
+  .jira-topbar__sep {
+    width: 1px;
+    height: 20px;
+    background: #e2e8f0;
+    flex-shrink: 0;
+  }
+  .jira-topbar__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    overflow-x: auto;
+  }
+  .jira-topbar__link {
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 0.4rem 0.75rem;
+    border-radius: 1.25rem;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s;
+  }
+  .jira-topbar__link:hover {
+    color: #1e293b;
+    background: #f1f5f9;
+  }
+  .jira-topbar__link--active {
+    color: #1e40af;
+    background: #eff6ff;
+  }
+  .jira-topbar__link--active:hover {
+    background: #dbeafe;
+  }
+</style>
+
+<%
+  shared_params = { start_date: @start_date, end_date: @end_date, team: @team }.compact_blank
+%>
+
+<nav class="jira-topbar">
+  <a href="<%= metrics_dashboard_path %>" class="jira-topbar__brand">
+    <svg viewBox="0 0 24 24"><path d="M4 13h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1zm-1 7a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v4zm10 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v8zm1-17v4a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1z"/></svg>
+    Metrics
+  </a>
+  <span class="jira-topbar__sep"></span>
+  <div class="jira-topbar__nav">
+    <a href="<%= metrics_jira_bugs_bubble_chart_page_path(shared_params) %>"
+       class="jira-topbar__link<%= ' jira-topbar__link--active' if current_page?(metrics_jira_bugs_bubble_chart_page_path) %>">
+      Category Chart
+    </a>
+    <a href="<%= metrics_jira_bugs_all_path(shared_params) %>"
+       class="jira-topbar__link<%= ' jira-topbar__link--active' if current_page?(metrics_jira_bugs_all_path) %>">
+      All Bugs
+    </a>
+    <a href="<%= metrics_jira_bugs_over_time_path(shared_params) %>"
+       class="jira-topbar__link<%= ' jira-topbar__link--active' if current_page?(metrics_jira_bugs_over_time_path) %>">
+      Bugs Over Time
+    </a>
+    <a href="<%= metrics_jira_bugs_invalid_categories_page_path(shared_params) %>"
+       class="jira-topbar__link<%= ' jira-topbar__link--active' if current_page?(metrics_jira_bugs_invalid_categories_page_path) %>">
+      Invalid Categories
+    </a>
+  </div>
+</nav>

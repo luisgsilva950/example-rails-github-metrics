@@ -1,0 +1,1364 @@
+<div class="admin-records-layout admin-analytics-layout">
+  <header class="admin-records-header">
+    <div>
+      <p class="admin-dashboard__eyebrow">Analytics</p>
+      <% if @active_tab == "overview" %>
+        <h1>Year in review</h1>
+        <p>A quick look at the pull request momentum for <%= @overview_year %>.</p>
+      <% elsif @active_tab == "repositories" %>
+        <h1>Repository insights</h1>
+        <p>See which repositories concentrate the most activity and changes.</p>
+      <% elsif @active_tab == "jira_bugs" %>
+        <h1>Jira bug analytics</h1>
+        <p>Understand bug accumulation by team, priority, and status so you can react quickly.</p>
+      <% elsif @active_tab == "resolved_bugs" %>
+        <h1>Bug resolution leaders</h1>
+        <p>See who closed the most bugs marked as "Done" over the last 12 months.</p>
+      <% elsif @active_tab == "authors" %>
+        <h1>Author insights</h1>
+        <p>Explore normalized authors and discover who opened the most pull requests.</p>
+      <% end %>
+    </div>
+    <div>
+      <%= link_to "Back to dashboard", admin_root_path, class: "admin-link" %>
+    </div>
+  </header>
+
+  <nav class="admin-analytics-tabs">
+    <%= link_to "Overview", admin_analytics_path(tab: "overview"), class: ["analytics-tab", ("is-active" if @active_tab == "overview")].compact.join(" ") %>
+    <%= link_to "Retrospective", admin_analytics_path(tab: "retrospective"), class: ["analytics-tab", ("is-active" if @active_tab == "retrospective")].compact.join(" ") %>
+    <%= link_to "Authors", admin_analytics_path(tab: "authors"), class: ["analytics-tab", ("is-active" if @active_tab == "authors")].compact.join(" ") %>
+    <%= link_to "Repositories", admin_analytics_path(tab: "repositories"), class: ["analytics-tab", ("is-active" if @active_tab == "repositories")].compact.join(" ") %>
+    <%= link_to "Jira bugs", admin_analytics_path(tab: "jira_bugs"), class: ["analytics-tab", ("is-active" if @active_tab == "jira_bugs")].compact.join(" ") %>
+    <%= link_to "Resolution", admin_analytics_path(tab: "resolved_bugs"), class: ["analytics-tab", ("is-active" if @active_tab == "resolved_bugs")].compact.join(" ") %>
+  </nav>
+
+  <% if @active_tab == "overview" && @overview_author_options.present? %>
+    <section class="admin-records-filter">
+      <%= form_with url: admin_analytics_path(tab: @active_tab), method: :get, local: true, class: "filter-form" do |form| %>
+        <%= form.hidden_field :tab, value: @active_tab %>
+        <div class="filter-field filter-checkboxes">
+          <div class="filter-field-header">
+            <%= form.label :overview_author_names, "Normalized authors" %>
+            <small>Select authors to focus the overview metrics</small>
+          </div>
+          <div class="filter-checkbox-grid">
+            <% @overview_author_options.each do |author| %>
+              <label class="filter-checkbox">
+                <%= check_box_tag "overview_author_names[]", author, @overview_selected_authors.include?(author) %>
+                <span><%= author %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="filter-form-actions">
+          <%= form.submit "Apply" %>
+          <% if @overview_selected_authors.any? %>
+              <%= link_to "Clear", admin_analytics_path(tab: @active_tab), class: "admin-link" %>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  <% elsif @active_tab == "authors" && @normalized_author_options.any? %>
+    <section class="admin-records-filter">
+      <%= form_with url: admin_analytics_path(tab: "authors"), method: :get, local: true, class: "filter-form" do |form| %>
+        <%= form.hidden_field :tab, value: "authors" %>
+        <div class="filter-field filter-checkboxes">
+          <div class="filter-field-header">
+            <%= form.label :normalized_author_names, "Normalized authors" %>
+            <small>Select one or more authors to narrow the results</small>
+          </div>
+          <div class="filter-checkbox-grid">
+            <% @normalized_author_options.each do |author| %>
+              <label class="filter-checkbox">
+                <%= check_box_tag "normalized_author_names[]", author, @selected_authors.include?(author) %>
+                <span><%= author %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="filter-field filter-date-range">
+          <div class="filter-date-range__content">
+            <div class="filter-date-range__icon" aria-hidden="true"></div>
+            <div class="filter-date-range__details">
+              <%= form.label :author_opened_from, "Opened after", class: "filter-date-range__label" %>
+              <p class="filter-date-range__hint">Only include pull requests opened on or after this date</p>
+              <p class="filter-date-range__active">
+                <% if @author_opened_from.present? %>
+                  Displaying pull requests opened since <strong><%= I18n.l(@author_opened_from, format: :long) %></strong>.
+                <% else %>
+                  No opened-after constraint applied yet.
+                <% end %>
+              </p>
+            </div>
+            <div class="filter-date-range__input">
+              <%= form.date_field :author_opened_from, value: @author_opened_from&.to_date, class: "filter-date-input" %>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-form-actions">
+          <%= form.submit "Apply" %>
+          <% if @selected_authors.any? || @author_opened_from.present? %>
+            <%= link_to "Clear", admin_analytics_path(tab: "authors"), class: "admin-link" %>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  <% elsif @active_tab == "repositories" && @repository_options.any? %>
+    <section class="admin-records-filter">
+      <%= form_with url: admin_analytics_path(tab: "repositories"), method: :get, local: true, class: "filter-form" do |form| %>
+        <%= form.hidden_field :tab, value: "repositories" %>
+        <div class="filter-field filter-checkboxes">
+          <div class="filter-field-header">
+            <%= form.label :repository_names, "Repositories" %>
+            <small>Select repositories to refine the view</small>
+          </div>
+          <div class="filter-checkbox-grid">
+            <% @repository_options.each do |repo_name| %>
+              <label class="filter-checkbox">
+                <%= check_box_tag "repository_names[]", repo_name, @selected_repositories.include?(repo_name) %>
+                <span><%= repo_name %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="filter-field filter-date-range">
+          <div class="filter-date-range__content">
+            <div class="filter-date-range__icon" aria-hidden="true"></div>
+            <div class="filter-date-range__details">
+              <%= form.label :repository_opened_from, "Opened after", class: "filter-date-range__label" %>
+              <p class="filter-date-range__hint">Only include pull requests opened on or after this date</p>
+              <p class="filter-date-range__active">
+                <% if @repository_opened_from.present? %>
+                  Displaying pull requests opened since <strong><%= I18n.l(@repository_opened_from, format: :long) %></strong>.
+                <% else %>
+                  No opened-after constraint applied yet.
+                <% end %>
+              </p>
+            </div>
+            <div class="filter-date-range__input">
+              <%= form.date_field :repository_opened_from, value: @repository_opened_from&.to_date, class: "filter-date-input" %>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-form-actions">
+          <%= form.submit "Apply" %>
+          <% if @selected_repositories.any? || @repository_opened_from.present? %>
+            <%= link_to "Clear", admin_analytics_path(tab: "repositories"), class: "admin-link" %>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  <% elsif @active_tab == "jira_bugs" && @jira_team_options.present? %>
+    <section class="admin-records-filter">
+      <%= form_with url: admin_analytics_path(tab: "jira_bugs"), method: :get, local: true, class: "filter-form" do |form| %>
+        <%= form.hidden_field :tab, value: "jira_bugs" %>
+        <div class="filter-field filter-checkboxes">
+          <div class="filter-field-header">
+            <%= form.label :jira_team_names, "Jira teams" %>
+            <small>Select teams to refine the results</small>
+          </div>
+          <div class="filter-checkbox-grid">
+            <% @jira_team_options.each do |team| %>
+              <label class="filter-checkbox">
+                <%= check_box_tag "jira_team_names[]", team, @selected_jira_teams.include?(team) %>
+                <span><%= team %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="filter-field filter-date-range">
+          <div class="filter-date-range__content">
+            <div class="filter-date-range__icon" aria-hidden="true"></div>
+            <div class="filter-date-range__details">
+              <%= form.label :jira_opened_from, "Opened after", class: "filter-date-range__label" %>
+              <p class="filter-date-range__hint">Only include Jira bugs opened on or after this date</p>
+              <p class="filter-date-range__active">
+                <% if @jira_opened_from.present? %>
+                  Displaying bugs opened since <strong><%= I18n.l(@jira_opened_from, format: :long) %></strong>.
+                <% else %>
+                  No opened-after constraint applied yet.
+                <% end %>
+              </p>
+            </div>
+            <div class="filter-date-range__input">
+              <%= form.date_field :jira_opened_from, value: @jira_opened_from&.to_date, class: "filter-date-input" %>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-form-actions">
+          <%= form.submit "Apply" %>
+          <% if @selected_jira_teams.any? || @jira_opened_from.present? %>
+            <%= link_to "Clear", admin_analytics_path(tab: "jira_bugs"), class: "admin-link" %>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  <% elsif @active_tab == "resolved_bugs" && @resolved_team_options.present? %>
+    <section class="admin-records-filter">
+      <%= form_with url: admin_analytics_path(tab: "resolved_bugs"), method: :get, local: true, class: "filter-form" do |form| %>
+        <%= form.hidden_field :tab, value: "resolved_bugs" %>
+        <div class="filter-field filter-checkboxes">
+          <div class="filter-field-header">
+            <%= form.label :resolved_team_names, "Teams" %>
+            <small>Limit the results to the selected teams</small>
+          </div>
+          <div class="filter-checkbox-grid">
+            <% @resolved_team_options.each do |team| %>
+              <label class="filter-checkbox">
+                <%= check_box_tag "resolved_team_names[]", team, @selected_resolved_teams.include?(team) %>
+                <span><%= team %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="filter-field filter-date-range">
+          <div class="filter-date-range__content">
+            <div class="filter-date-range__icon" aria-hidden="true"></div>
+            <div class="filter-date-range__details">
+              <p class="filter-date-range__label">Opened after</p>
+              <p class="filter-date-range__hint">Show bugs opened on or after this date</p>
+              <p class="filter-date-range__active">
+                <% if @resolved_opened_from.present? %>
+                  Currently showing bugs opened since <strong><%= I18n.l(@resolved_opened_from, format: :long) %></strong>.
+                <% else %>
+                  No opened-after constraint applied yet.
+                <% end %>
+              </p>
+            </div>
+            <div class="filter-date-range__input">
+              <%= form.date_field :resolved_opened_from, value: @resolved_opened_from&.to_date, class: "filter-date-input" %>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-form-actions">
+          <%= form.submit "Apply" %>
+          <% if @selected_resolved_teams.any? || @resolved_opened_from.present? %>
+            <%= link_to "Clear", admin_analytics_path(tab: "resolved_bugs"), class: "admin-link" %>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+
+  <% if @active_tab == "overview" %>
+    <div class="overview-metrics-grid">
+      <section class="overview-metric-card">
+        <p class="overview-metric-card__label">Merged pull requests in <%= @overview_year %></p>
+        <h2 class="overview-metric-card__value"><%= number_with_delimiter(@overview_total_merges_2025) %></h2>
+        <p class="overview-metric-card__hint">Count of PRs with a merge timestamp between Jan 1 and Dec 31 <%= @overview_year %>.</p>
+      </section>
+
+      <section class="overview-metric-card">
+        <p class="overview-metric-card__label">Repositories with merges</p>
+        <h2 class="overview-metric-card__value"><%= number_with_delimiter(@overview_repositories_2025) %></h2>
+        <p class="overview-metric-card__hint">Distinct repositories that recorded at least one merged pull request in <%= @overview_year %>.</p>
+      </section>
+
+      <% if @overview_review_turnaround.present? %>
+        <section class="overview-metric-card">
+          <p class="overview-metric-card__label">Average review turnaround</p>
+          <h2 class="overview-metric-card__value">
+            <%= distance_of_time_in_words(0, @overview_review_turnaround) %>
+          </h2>
+          <p class="overview-metric-card__hint">
+            Mean time from PR open to merge for filtered repositories/authors in <%= @overview_year %>.
+          </p>
+        </section>
+      <% end %>
+    </div>
+
+    <% if @overview_language_stats.present? %>
+      <section class="overview-language-section">
+        <header class="overview-language-section__header">
+          <div>
+            <h2>Languages with the highest change volume</h2>
+            <p>Based on merged pull requests in <%= @overview_year %>.</p>
+          </div>
+        </header>
+        <div class="overview-language-grid">
+          <% @overview_language_stats.each do |row| %>
+            <div class="overview-language-card">
+              <p class="overview-language-card__label"><%= row[:language] %></p>
+              <h3 class="overview-language-card__changes"><%= number_with_delimiter(row[:total_changes]) %> changes</h3>
+              <p class="overview-language-card__meta"><%= number_with_delimiter(row[:pull_requests]) %> merged pull requests</p>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @overview_early_commit.present? || @overview_late_commit.present? %>
+      <section class="overview-commit-extremes">
+        <header class="overview-commit-extremes__header">
+          <div>
+            <h2>Commit time extremes (BRT)</h2>
+            <p>Work-hours are 05:00–19:00 BRT; anything else counts as after-hours.</p>
+          </div>
+        </header>
+        <div class="overview-commit-extremes__grid">
+          <% if @overview_first_commit.present? %>
+            <div class="overview-commit-card overview-commit-card--highlight">
+              <p class="overview-commit-card__label">First commit of <%= @overview_year %></p>
+              <h3 class="overview-commit-card__author"><%= @overview_first_commit[:author] %></h3>
+              <p class="overview-commit-card__repo"><%= @overview_first_commit[:repository] %></p>
+              <p class="overview-commit-card__time"><%= I18n.l(@overview_first_commit[:time], format: :long) %> (BRT)</p>
+              <p class="overview-commit-card__sha">SHA <span><%= @overview_first_commit[:sha] %></span></p>
+            </div>
+          <% end %>
+          <div class="overview-commit-card">
+            <p class="overview-commit-card__label">Earliest work-hours commit</p>
+            <% if @overview_early_commit.present? %>
+              <h3 class="overview-commit-card__author"><%= @overview_early_commit[:author] %></h3>
+              <p class="overview-commit-card__repo"><%= @overview_early_commit[:repository] %></p>
+              <p class="overview-commit-card__time"><%= I18n.l(@overview_early_commit[:time], format: :long) %> (BRT)</p>
+              <p class="overview-commit-card__sha">SHA <span><%= @overview_early_commit[:sha] %></span></p>
+            <% else %>
+              <p class="overview-commit-card__empty">No work-hour commits recorded.</p>
+            <% end %>
+          </div>
+
+          <div class="overview-commit-card">
+            <p class="overview-commit-card__label">Latest after-hours commit</p>
+            <% if @overview_late_commit.present? %>
+              <h3 class="overview-commit-card__author"><%= @overview_late_commit[:author] %></h3>
+              <p class="overview-commit-card__repo"><%= @overview_late_commit[:repository] %></p>
+              <p class="overview-commit-card__time"><%= I18n.l(@overview_late_commit[:time], format: :long) %> (BRT)</p>
+              <p class="overview-commit-card__sha">SHA <span><%= @overview_late_commit[:sha] %></span></p>
+            <% else %>
+              <p class="overview-commit-card__empty">No after-hours commits recorded.</p>
+            <% end %>
+          </div>
+        </div>
+      </section>
+    <% end %>
+  <% elsif @active_tab == "retrospective" %>
+    <section class="retrospective-hero">
+      <div>
+        <p class="retrospective-hero__eyebrow">Year in review</p>
+        <h1>2025 engineering retrospective</h1>
+        <% focus_copy = if @overview_selected_authors.any?
+                          "Spotlight on #{ @overview_selected_authors.first(3).to_sentence }#{@overview_selected_authors.size > 3 ? " + others" : "" }"
+                        else
+                          "Across every author and repository"
+                        end %>
+        <p><%= focus_copy %>. Built for screenshare moments—just hit play.</p>
+      </div>
+      <div class="retrospective-hero__badge">
+        <span><%= @overview_total_merges_2025 %> merges</span>
+        <small><%= @overview_year %> playlist</small>
+      </div>
+    </section>
+
+    <section class="retrospective-highlight-grid">
+      <article class="retrospective-card retrospective-card--loud">
+        <p class="retrospective-card__label">Merged pull requests</p>
+        <h2><%= number_with_delimiter(@overview_total_merges_2025) %></h2>
+        <p>Across <%= number_with_delimiter(@overview_repositories_2025) %> repositories.</p>
+      </article>
+      <article class="retrospective-card">
+        <p class="retrospective-card__label">Active contributors</p>
+        <h3><%= number_with_delimiter(@overview_contributor_count) %></h3>
+        <p>Normalized authors who merged at least once.</p>
+      </article>
+      <article class="retrospective-card">
+        <p class="retrospective-card__label">Average review turnaround</p>
+        <% if @overview_review_turnaround.present? %>
+          <h3><%= distance_of_time_in_words(0, @overview_review_turnaround) %></h3>
+          <p>Time from open to merge.</p>
+        <% else %>
+          <h3>–</h3>
+          <p>Need more merged PRs to calculate.</p>
+        <% end %>
+      </article>
+      <article class="retrospective-card">
+        <p class="retrospective-card__label">Average merges / month</p>
+        <h3><%= number_with_delimiter(@overview_average_monthly_merges || 0) %></h3>
+        <p>Based on the full calendar year.</p>
+      </article>
+    </section>
+
+    <% if @overview_busiest_month.present? %>
+      <section class="retrospective-spotlight">
+        <div>
+          <p class="retrospective-spotlight__eyebrow">Peak momentum</p>
+          <h2><%= @overview_busiest_month[:label] %> was on repeat</h2>
+          <p><%= number_with_delimiter(@overview_busiest_month[:value]) %> merges—more than any other month.</p>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @overview_language_stats.present? %>
+      <section class="retrospective-section">
+        <header>
+          <p class="retrospective-section__eyebrow">Soundtrack languages</p>
+          <h2>Top languages by change volume</h2>
+        </header>
+        <div class="retrospective-language-grid">
+          <% @overview_language_stats.each do |row| %>
+            <article class="retrospective-language-card">
+              <p class="retrospective-language-card__label"><%= row[:language] %></p>
+              <h3><%= number_with_delimiter(row[:total_changes]) %></h3>
+              <p><%= number_with_delimiter(row[:pull_requests]) %> merged PRs</p>
+            </article>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @overview_top_repositories&.any? %>
+      <section class="retrospective-section retrospective-section--split">
+        <div>
+          <p class="retrospective-section__eyebrow">Most binge-listened repos</p>
+          <h2>Repositories with the loudest merge buzz</h2>
+          <ul class="retrospective-list">
+            <% @overview_top_repositories.each do |row| %>
+              <li>
+                <strong><%= row[:name] %></strong>
+                <span><%= number_with_delimiter(row[:merges]) %> merges · <%= number_with_delimiter(row[:changes]) %> changes</span>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+        <% if @overview_top_authors&.any? %>
+          <div>
+            <p class="retrospective-section__eyebrow">Featured artists</p>
+            <h2>Authors who headlined the year</h2>
+            <ul class="retrospective-list">
+              <% @overview_top_authors.each do |row| %>
+                <li>
+                  <strong><%= row[:name] %></strong>
+                  <span><%= number_with_delimiter(row[:merges]) %> merges · <%= number_with_delimiter(row[:changes]) %> changes</span>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+      </section>
+    <% end %>
+
+    <% if @overview_first_commit.present? || @overview_early_commit.present? || @overview_late_commit.present? %>
+      <section class="retrospective-section retrospective-commit-story">
+        <header>
+          <p class="retrospective-section__eyebrow">Commit story arc</p>
+          <h2>The moments that bookended the year</h2>
+        </header>
+        <div class="retrospective-commit-grid">
+          <% if @overview_first_commit.present? %>
+            <details class="retrospective-commit-reveal-card">
+              <summary class="retrospective-commit-summary">
+                <article>
+                  <p class="retrospective-card__label">First commit of <%= @overview_year %></p>
+                  <h3><%= @overview_first_commit[:author] %></h3>
+                  <p><%= @overview_first_commit[:repository] %> · <%= I18n.l(@overview_first_commit[:time], format: :long) %></p>
+                  <small>SHA <%= @overview_first_commit[:sha] %></small>
+                </article>
+                <div class="retrospective-commit-overlay">
+                  <span>Quem é o Faxineiro de Réveillon?</span>
+                  <small>Click to reveal the first commit of <%= @overview_year %>.</small>
+                </div>
+              </summary>
+            </details>
+          <% end %>
+          <% if @overview_early_commit.present? %>
+            <% early_alias = "Sunrise Scripter" %>
+            <details class="retrospective-commit-reveal-card">
+              <summary class="retrospective-commit-summary">
+                <article>
+                  <p class="retrospective-card__label">Earliest work-hours commit</p>
+                  <h3><%= @overview_early_commit[:author] %></h3>
+                  <p><%= @overview_early_commit[:repository] %> · <%= I18n.l(@overview_early_commit[:time], format: :long) %></p>
+                  <p class="retrospective-commit-nickname">Nickname: <%= early_alias %></p>
+                  <small>SHA <%= @overview_early_commit[:sha] %></small>
+                </article>
+                <div class="retrospective-commit-overlay">
+                  <span>Quem acordou antes do sol?</span>
+                  <small>Click to reveal the <%= early_alias %>.</small>
+                </div>
+              </summary>
+            </details>
+          <% end %>
+          <% if @overview_late_commit.present? %>
+            <% late_alias = "Midnight Merge Maestro" %>
+            <details class="retrospective-commit-reveal-card">
+              <summary class="retrospective-commit-summary">
+                <article>
+                  <p class="retrospective-card__label">Latest after-hours commit</p>
+                  <h3><%= @overview_late_commit[:author] %></h3>
+                  <p><%= @overview_late_commit[:repository] %> · <%= I18n.l(@overview_late_commit[:time], format: :long) %></p>
+                  <p class="retrospective-commit-nickname">Nickname: <%= late_alias %></p>
+                  <small>SHA <%= @overview_late_commit[:sha] %></small>
+                </article>
+                <div class="retrospective-commit-overlay">
+                  <span>Quem virou a noite codando?</span>
+                  <small>Click to reveal the <%= late_alias %>.</small>
+                </div>
+              </summary>
+            </details>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @top_pull_request_authors&.any? || @top_change_volume_authors&.any? %>
+      <section class="retrospective-section retrospective-authors">
+        <header>
+          <p class="retrospective-section__eyebrow">Spotlighted authors</p>
+          <h2>Who drove the biggest merge runs</h2>
+        </header>
+        <div class="retrospective-author-panels">
+          <% if @top_pull_request_authors&.any? %>
+            <div class="retrospective-author-panel">
+              <h3>Most pull requests merged</h3>
+              <ul class="retrospective-author-list">
+                <% @top_pull_request_authors.first(5).each_with_index do |row, index| %>
+                  <li>
+                    <span class="retrospective-author-rank">#<%= index + 1 %></span>
+                    <div>
+                      <strong><%= row[:normalized_author_name] %></strong>
+                      <small><%= number_with_delimiter(row[:pull_requests_count]) %> merges · <%= number_with_delimiter(row[:total_changes]) %> changes</small>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @top_change_volume_authors&.any? %>
+            <div class="retrospective-author-panel">
+              <h3>Highest change volume</h3>
+              <ul class="retrospective-author-list">
+                <% @top_change_volume_authors.first(5).each_with_index do |row, index| %>
+                  <li>
+                    <span class="retrospective-author-rank">#<%= index + 1 %></span>
+                    <div>
+                      <strong><%= row[:normalized_author_name] %></strong>
+                      <small><%= number_with_delimiter(row[:total_changes]) %> changes · <%= number_with_delimiter(row[:pull_requests_count]) %> PRs</small>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @top_average_change_authors&.any? || @largest_pull_requests&.any? || @authors_over_threshold&.any? %>
+      <details class="retrospective-section-mask">
+        <summary class="retrospective-section-mask__summary">
+          <div class="retrospective-section-mask__content">
+            <section class="retrospective-section retrospective-authors">
+            <header>
+              <p class="retrospective-section__eyebrow">Deep cuts</p>
+              <h2>When changes got truly massive</h2>
+            </header>
+            <div class="retrospective-author-panels">
+          <% if @top_average_change_authors&.any? %>
+            <div class="retrospective-author-panel">
+              <h3>Biggest avg change per file</h3>
+              <ul class="retrospective-author-list">
+                <% @top_average_change_authors.first(5).each do |row| %>
+                  <li>
+                    <div>
+                      <strong><%= row[:normalized_author_name] %></strong>
+                      <small><%= number_with_precision(row[:avg_changes_per_file], precision: 2, delimiter: ".", separator: ",") %> avg changes · <%= number_with_delimiter(row[:pull_requests_count]) %> PRs</small>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @largest_pull_requests&.any? %>
+            <div class="retrospective-author-panel">
+              <h3>Largest pull requests</h3>
+              <ul class="retrospective-author-list">
+                <% @largest_pull_requests.first(4).each do |row| %>
+                  <% pr = row[:pull_request] %>
+                  <li>
+                    <div>
+                      <strong><%= pr.repository&.name || "Unknown repo" %></strong>
+                      <small><%= row[:normalized_author_name] %> · <%= number_with_delimiter(row[:total_changes]) %> changes</small>
+                    </div>
+                    <span class="retrospective-author-pill">PR #<%= pr.number %></span>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @authors_over_threshold&.any? %>
+            <div class="retrospective-author-panel">
+              <h3>PRs over 2k changes</h3>
+              <ul class="retrospective-author-list">
+                <% authors_over_threshold = authors_over_threshold = @authors_over_threshold.first(5) %>
+                <% authors_over_threshold.each do |row| %>
+                  <li>
+                    <div>
+                      <strong><%= row[:normalized_author_name] %></strong>
+                      <small><%= number_with_delimiter(row[:pr_count]) %> mega PRs</small>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+                </div>
+              <% end %>
+            </div>
+            </section>
+          </div>
+          <div class="retrospective-section-mask__overlay">
+            <span>Quem são os "Machado de Assis"?</span>
+            <small>Click to reveal the mega-change legends.</small>
+          </div>
+        </summary>
+      </details>
+    <% end %>
+
+    <% if @top_repository_prs&.any? || @top_repository_changes&.any? || @top_repository_avg_changes&.any? %>
+      <section class="retrospective-section retrospective-repositories">
+        <header>
+          <p class="retrospective-section__eyebrow">Label deep dive</p>
+          <h2>Repositories that defined the soundtrack</h2>
+        </header>
+        <div class="retrospective-repo-panels">
+          <% if @top_repository_prs&.any? %>
+            <div class="retrospective-repo-panel">
+              <h3>Most pull requests</h3>
+              <ul class="retrospective-repo-list">
+                <% @top_repository_prs.first(5).each_with_index do |row, index| %>
+                  <li>
+                    <span class="retrospective-repo-rank">#<%= index + 1 %></span>
+                    <div>
+                      <strong><%= row[:repository_name] %></strong>
+                      <small><%= number_with_delimiter(row[:pull_requests_count]) %> merges · <%= number_with_delimiter(row[:contributors]) %> contributors</small>
+                    </div>
+                    <span class="retrospective-repo-pill"><%= number_with_delimiter(row[:total_changes]) %> changes</span>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @top_repository_changes&.any? %>
+            <div class="retrospective-repo-panel">
+              <h3>Highest change volume</h3>
+              <ul class="retrospective-repo-list">
+                <% @top_repository_changes.first(5).each_with_index do |row, index| %>
+                  <li>
+                    <span class="retrospective-repo-rank">#<%= index + 1 %></span>
+                    <div>
+                      <strong><%= row[:repository_name] %></strong>
+                      <small><%= number_with_delimiter(row[:total_changes]) %> changes · <%= number_with_delimiter(row[:pull_requests_count]) %> PRs</small>
+                    </div>
+                    <span class="retrospective-repo-pill"><%= number_with_delimiter(row[:contributors]) %> contributors</span>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @top_repository_avg_changes&.any? %>
+            <div class="retrospective-repo-panel">
+              <h3>Most intense per-file edits</h3>
+              <ul class="retrospective-repo-list">
+                <% @top_repository_avg_changes.first(5).each_with_index do |row, index| %>
+                  <li>
+                    <span class="retrospective-repo-rank">#<%= index + 1 %></span>
+                    <div>
+                      <strong><%= row[:repository_name] %></strong>
+                      <small><%= number_with_precision(row[:avg_changes_per_file], precision: 2, delimiter: ".", separator: ",") %> avg changes · <%= number_with_delimiter(row[:total_files]) %> files</small>
+                    </div>
+                    <span class="retrospective-repo-pill"><%= number_with_delimiter(row[:pull_requests_count]) %> PRs</span>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @resolved_bug_leaders&.any? || @jira_component_counts&.any? %>
+      <section class="retrospective-section retrospective-bugs">
+        <header>
+          <p class="retrospective-section__eyebrow">Bug encore</p>
+          <h2>Who closed the loop & where bugs clustered</h2>
+        </header>
+        <div class="retrospective-bug-panels">
+          <% if @resolved_bug_leaders&.any? %>
+            <div class="retrospective-bug-panel">
+              <h3>Top bug resolvers</h3>
+              <p class="retrospective-bug-panel__hint">Since <%= @resolved_timeframe_label %></p>
+              <ul class="retrospective-bug-list">
+                <% @resolved_bug_leaders.first(5).each_with_index do |row, index| %>
+                  <li>
+                    <span class="retrospective-bug-rank">#<%= index + 1 %></span>
+                    <div>
+                      <strong><%= row[:assignee] %></strong>
+                      <small><%= number_with_delimiter(row[:bug_count]) %> bugs resolved</small>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @jira_component_counts&.any? %>
+            <div class="retrospective-bug-panel">
+              <h3>Components with most bugs</h3>
+              <ul class="retrospective-bug-list">
+                <% @jira_component_counts.first(5).each_with_index do |row, index| %>
+                  <li>
+                    <span class="retrospective-bug-rank">#<%= index + 1 %></span>
+                    <div>
+                      <strong><%= row[:component] %></strong>
+                      <small><%= number_with_delimiter(row[:bug_count]) %> active bugs</small>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @jira_component_priority_breakdown&.any? %>
+            <div class="retrospective-bug-panel">
+              <h3>Priority mix inside hot components</h3>
+              <p class="retrospective-bug-panel__hint">Breakdown across the five busiest components.</p>
+              <ul class="retrospective-bug-list retrospective-bug-priority-list">
+                <% @jira_component_priority_breakdown.each do |row| %>
+                  <% component_label = row[:component].presence || "Unspecified component" %>
+                  <li>
+                    <div>
+                      <strong><%= component_label %></strong>
+                      <small><%= number_with_delimiter(row[:total]) %> bugs total</small>
+                    </div>
+                    <div class="retrospective-bug-priority-chips">
+                      <% row[:priorities].each do |priority_row| %>
+                        <% percentage = row[:total].positive? ? (priority_row[:count].to_f / row[:total]) * 100 : 0 %>
+                        <span class="retrospective-bug-priority-chip">
+                          <span class="retrospective-bug-priority-chip__label"><%= priority_row[:priority].presence || "No priority" %></span>
+                          <span class="retrospective-bug-priority-chip__value">
+                            <%= number_with_delimiter(priority_row[:count]) %>
+                            (<%= number_to_percentage(percentage, precision: percentage >= 10 ? 0 : 1) %>)
+                          </span>
+                        </span>
+                      <% end %>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @jira_top_bug_months&.any? || @jira_bottom_bug_months&.any? %>
+      <section class="retrospective-section retrospective-bug-months">
+        <header>
+          <p class="retrospective-section__eyebrow">Busiest vs calm periods</p>
+          <h2>Opened bugs by month</h2>
+        </header>
+
+        <% if @jira_top_bug_months&.any? %>
+          <div class="retrospective-bug-months-block">
+            <h3>Most intense months</h3>
+            <div class="retrospective-bug-months-grid">
+              <% @jira_top_bug_months.each do |row| %>
+                <article class="retrospective-bug-month-card">
+                  <p class="retrospective-card__label"><%= row[:label] %></p>
+                  <h3><%= number_with_delimiter(row[:bug_count]) %> bugs opened</h3>
+                  <p>Within the last 12 months.</p>
+                </article>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <% if @jira_bottom_bug_months&.any? %>
+          <div class="retrospective-bug-months-block">
+            <h3>Calmest months</h3>
+            <div class="retrospective-bug-months-grid">
+              <% @jira_bottom_bug_months.each do |row| %>
+                <article class="retrospective-bug-month-card">
+                  <p class="retrospective-card__label"><%= row[:label] %></p>
+                  <h3><%= number_with_delimiter(row[:bug_count]) %> bugs opened</h3>
+                  <p>Lowest volume recorded in 12 months.</p>
+                </article>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </section>
+    <% end %>
+  <% elsif @active_tab == "authors" %>
+    <div class="admin-analytics-sections">
+    <section class="admin-analytics-section">
+      <input type="checkbox" id="analytics-toggle-pr-count" class="analytics-section-toggle">
+      <div class="admin-analytics-section__header">
+        <h2>Authors with most pull requests</h2>
+        <label for="analytics-toggle-pr-count" class="analytics-section-trigger">
+          <span class="show-text">Show</span>
+          <span class="hide-text">Hide</span>
+          <small>Click to reveal</small>
+        </label>
+      </div>
+      <div class="admin-records-table analytics-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Normalized author</th>
+              <th>Pull requests</th>
+              <th>Total changes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @top_pull_request_authors.any? %>
+              <% @top_pull_request_authors.each do |row| %>
+                <tr>
+                  <td data-label="Normalized author"><%= row[:normalized_author_name] %></td>
+                  <td data-label="Pull requests"><strong><%= number_with_delimiter(row[:pull_requests_count]) %></strong></td>
+                  <td data-label="Total changes"><%= number_with_delimiter(row[:total_changes]) %></td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="4">No data available for the selected filters.</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-analytics-section">
+      <input type="checkbox" id="analytics-toggle-change-volume" class="analytics-section-toggle">
+      <div class="admin-analytics-section__header">
+        <h2>Authors with highest change volume (adds + dels)</h2>
+        <label for="analytics-toggle-change-volume" class="analytics-section-trigger">
+          <span class="show-text">Show</span>
+          <span class="hide-text">Hide</span>
+          <small>Click to reveal</small>
+        </label>
+      </div>
+      <div class="admin-records-table analytics-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Normalized author</th>
+              <th>Total changes</th>
+              <th>Pull requests</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @top_change_volume_authors.any? %>
+              <% @top_change_volume_authors.each do |row| %>
+                <tr>
+                  <td data-label="Normalized author"><%= row[:normalized_author_name] %></td>
+                  <td data-label="Total changes"><strong><%= number_with_delimiter(row[:total_changes]) %></strong></td>
+                  <td data-label="Pull requests"><%= number_with_delimiter(row[:pull_requests_count]) %></td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="4">No data available for the selected filters.</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-analytics-section">
+      <input type="checkbox" id="analytics-toggle-avg-change" class="analytics-section-toggle">
+      <div class="admin-analytics-section__header">
+        <h2>Highest average changes per file</h2>
+        <label for="analytics-toggle-avg-change" class="analytics-section-trigger">
+          <span class="show-text">Show</span>
+          <span class="hide-text">Hide</span>
+          <small>Click to reveal</small>
+        </label>
+      </div>
+      <div class="admin-records-table analytics-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Normalized author</th>
+              <th>Avg changes / file</th>
+              <th>Pull requests</th>
+              <th>Files changed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @top_average_change_authors.any? %>
+              <% @top_average_change_authors.each do |row| %>
+                <tr>
+                  <td data-label="Normalized author"><%= row[:normalized_author_name] %></td>
+                  <td data-label="Avg changes / file"><strong><%= number_with_precision(row[:avg_changes_per_file], precision: 2, delimiter: ".", separator: ",") %></strong></td>
+                  <td data-label="Pull requests"><%= number_with_delimiter(row[:pull_requests_count]) %></td>
+                  <td data-label="Files changed"><%= number_with_delimiter(row[:total_files]) %></td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="5">No data available for the selected filters.</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-analytics-section">
+      <input type="checkbox" id="analytics-toggle-largest-prs" class="analytics-section-toggle">
+      <div class="admin-analytics-section__header">
+        <h2>Largest pull requests (total changes)</h2>
+        <label for="analytics-toggle-largest-prs" class="analytics-section-trigger">
+          <span class="show-text">Show</span>
+          <span class="hide-text">Hide</span>
+          <small>Click to reveal</small>
+        </label>
+      </div>
+      <div class="admin-records-table analytics-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Repository</th>
+              <th>PR</th>
+              <th>Normalized author</th>
+              <th>Total changes</th>
+              <th>Additions</th>
+              <th>Deletions</th>
+              <th>Files</th>
+              <th>Avg change / file</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @largest_pull_requests.any? %>
+              <% @largest_pull_requests.each do |row| %>
+                <% pr = row[:pull_request] %>
+                <tr>
+                  <td data-label="Repository"><%= pr.repository&.name || "-" %></td>
+                  <td data-label="PR">
+                    <%= link_to "##{pr.number}", admin_record_path(model: :pull_requests, id: pr.id) %>
+                  </td>
+                  <td data-label="Normalized author"><%= row[:normalized_author_name] %></td>
+                  <td data-label="Total changes"><strong><%= number_with_delimiter(row[:total_changes]) %></strong></td>
+                  <td data-label="Additions"><%= number_with_delimiter(row[:additions]) %></td>
+                  <td data-label="Deletions"><%= number_with_delimiter(row[:deletions]) %></td>
+                  <td data-label="Files"><%= number_with_delimiter(row[:changed_files]) %></td>
+                  <td data-label="Avg change / file">
+                    <% if row[:average_changes_per_file].present? %>
+                      <%= number_with_precision(row[:average_changes_per_file], precision: 2, delimiter: ".", separator: ",") %>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="8">No data available for the selected filters.</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-analytics-section">
+      <input type="checkbox" id="analytics-toggle-large-change-authors" class="analytics-section-toggle">
+      <div class="admin-analytics-section__header">
+        <h2>Authors with PRs over 2,000 changes</h2>
+        <label for="analytics-toggle-large-change-authors" class="analytics-section-trigger">
+          <span class="show-text">Show</span>
+          <span class="hide-text">Hide</span>
+          <small>Click to reveal</small>
+        </label>
+      </div>
+      <div class="admin-records-table analytics-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Normalized author</th>
+              <th>PRs ≥ 2,000 changes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @authors_over_threshold.any? %>
+              <% authors_over_threshold = authors_over_threshold = @authors_over_threshold.first(8) %>
+              <% authors_over_threshold.each do |row| %>
+                <tr>
+                  <td data-label="Normalized author"><%= row[:normalized_author_name] %></td>
+                  <td data-label="PRs ≥ 2,000 changes"><strong><%= number_with_delimiter(row[:pr_count]) %></strong></td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="2">No pull requests above 2,000 changes for the selected filters.</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    </div>
+  <% elsif @active_tab == "repositories" %>
+    <div class="admin-analytics-sections">
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-repo-pr-count" class="analytics-section-toggle">
+        <div class="admin-analytics-section__header">
+          <h2>Repositories with most pull requests</h2>
+          <label for="analytics-toggle-repo-pr-count" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Repository</th>
+                <th>Contributors</th>
+                <th>Pull requests</th>
+                <th>Total changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @top_repository_prs&.any? %>
+                <% @top_repository_prs.each do |row| %>
+                  <tr>
+                    <td data-label="Repository"><%= row[:repository_name] %></td>
+                    <td data-label="Contributors"><%= number_with_delimiter(row[:contributors]) %></td>
+                    <td data-label="Pull requests"><strong><%= number_with_delimiter(row[:pull_requests_count]) %></strong></td>
+                    <td data-label="Total changes"><%= number_with_delimiter(row[:total_changes]) %></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="3">No data available for the selected filters.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-repo-changes" class="analytics-section-toggle">
+        <div class="admin-analytics-section__header">
+          <h2>Repositories with highest change volume</h2>
+          <label for="analytics-toggle-repo-changes" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Repository</th>
+                <th>Contributors</th>
+                <th>Total changes</th>
+                <th>Pull requests</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @top_repository_changes.any? %>
+                <% @top_repository_changes.each do |row| %>
+                  <tr>
+                    <td data-label="Repository"><%= row[:repository_name] %></td>
+                    <td data-label="Contributors"><%= number_with_delimiter(row[:contributors]) %></td>
+                    <td data-label="Total changes"><strong><%= number_with_delimiter(row[:total_changes]) %></strong></td>
+                    <td data-label="Pull requests"><%= number_with_delimiter(row[:pull_requests_count]) %></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="3">No data available for the selected filters.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-repo-avg" class="analytics-section-toggle">
+        <div class="admin-analytics-section__header">
+          <h2>Repositories with highest avg changes per file</h2>
+          <label for="analytics-toggle-repo-avg" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Repository</th>
+                <th>Contributors</th>
+                <th>Avg changes / file</th>
+                <th>Pull requests</th>
+                <th>Files changed</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @top_repository_avg_changes.any? %>
+                <% @top_repository_avg_changes.each do |row| %>
+                  <tr>
+                    <td data-label="Repository"><%= row[:repository_name] %></td>
+                    <td data-label="Contributors"><%= number_with_delimiter(row[:contributors]) %></td>
+                    <td data-label="Avg changes / file"><strong><%= number_with_precision(row[:avg_changes_per_file], precision: 2, delimiter: ".", separator: ",") %></strong></td>
+                    <td data-label="Pull requests"><%= number_with_delimiter(row[:pull_requests_count]) %></td>
+                    <td data-label="Files changed"><%= number_with_delimiter(row[:total_files]) %></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="4">No data available for the selected filters.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  <% elsif @active_tab == "resolved_bugs" %>
+    <div class="admin-analytics-sections">
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-resolved-assignees" class="analytics-section-toggle" checked>
+        <div class="admin-analytics-section__header">
+          <div>
+            <h2>Top bug resolvers (Done status)</h2>
+            <small>Since <%= @resolved_timeframe_label %></small>
+          </div>
+          <label for="analytics-toggle-resolved-assignees" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Assignee</th>
+                <th>Resolved bugs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @resolved_bug_leaders&.any? %>
+                <% @resolved_bug_leaders.each do |row| %>
+                  <tr>
+                    <td data-label="Assignee"><%= row[:assignee] %></td>
+                    <td data-label="Resolved bugs"><strong><%= number_with_delimiter(row[:bug_count]) %></strong></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="2">No bugs marked as Done in the selected period.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-resolved-teams" class="analytics-section-toggle">
+        <div class="admin-analytics-section__header">
+          <h2>Teams with most resolved bugs</h2>
+          <label for="analytics-toggle-resolved-teams" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Resolved bugs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @resolved_bug_by_team&.any? %>
+                <% @resolved_bug_by_team.each do |row| %>
+                  <tr>
+                    <td data-label="Team"><%= row[:team] %></td>
+                    <td data-label="Resolved bugs"><strong><%= number_with_delimiter(row[:bug_count]) %></strong></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="2">No teams with resolved bugs in the selected period.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  <% elsif @active_tab == "jira_bugs" %>
+    <div class="admin-analytics-sections">
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-jira-teams" class="analytics-section-toggle">
+        <div class="admin-analytics-section__header">
+          <h2>Teams with most open bugs</h2>
+          <label for="analytics-toggle-jira-teams" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Bugs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @jira_top_teams.any? %>
+                <% @jira_top_teams.each do |row| %>
+                  <tr>
+                    <td data-label="Team"><%= row[:team] || "No team" %></td>
+                    <td data-label="Bugs"><strong><%= number_with_delimiter(row[:bug_count]) %></strong></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="2">No data available for the selected filters.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-jira-priority" class="analytics-section-toggle">
+        <div class="admin-analytics-section__header">
+          <h2>Distribution by priority</h2>
+          <label for="analytics-toggle-jira-priority" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>Bugs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @jira_priority_counts.any? %>
+                <% @jira_priority_counts.each do |row| %>
+                  <tr>
+                    <td data-label="Priority"><%= row[:priority] || "No priority" %></td>
+                    <td data-label="Bugs"><strong><%= number_with_delimiter(row[:bug_count]) %></strong></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="2">No data available for the selected filters.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-jira-components" class="analytics-section-toggle">
+        <div class="admin-analytics-section__header">
+          <h2>Components with most bugs</h2>
+          <label for="analytics-toggle-jira-components" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th>Bugs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @jira_component_counts.any? %>
+                <% @jira_component_counts.each do |row| %>
+                  <tr>
+                    <td data-label="Component"><%= row[:component] || "No component" %></td>
+                    <td data-label="Bugs"><strong><%= number_with_delimiter(row[:bug_count]) %></strong></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="2">No data available for the selected filters.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-analytics-section">
+        <input type="checkbox" id="analytics-toggle-jira-status" class="analytics-section-toggle">
+        <div class="admin-analytics-section__header">
+          <h2>Distribution by status</h2>
+          <label for="analytics-toggle-jira-status" class="analytics-section-trigger">
+            <span class="show-text">Show</span>
+            <span class="hide-text">Hide</span>
+            <small>Click to reveal</small>
+          </label>
+        </div>
+        <div class="admin-records-table analytics-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Bugs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @jira_status_counts.any? %>
+                <% @jira_status_counts.each do |row| %>
+                  <tr>
+                    <td data-label="Status"><%= row[:status] || "No status" %></td>
+                    <td data-label="Bugs"><strong><%= number_with_delimiter(row[:bug_count]) %></strong></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="2">No data available for the selected filters.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,14 @@
+<div class="admin-record">
+  <h1><%= @model.model_name.human %> ##<%= @record.id %></h1>
+
+  <dl>
+    <% @record.attributes.each do |key, value| %>
+      <dt><%= key.titleize %></dt>
+      <dd><%= value.present? ? value : "-" %></dd>
+    <% end %>
+  </dl>
+
+  <p>
+    <%= link_to "Voltar", admin_records_path(model: params[:model]) %>
+  </p>
+</div>

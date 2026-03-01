@@ -1,0 +1,57 @@
+<% content_for(:title) { "Cycles — Capacity Planning" } %>
+
+<div class="planning-layout">
+  <header class="planning-header">
+    <div>
+      <p class="planning-header__eyebrow">Sprints</p>
+      <h1>Cycles</h1>
+      <p>All development cycles (sprints) for planning.</p>
+    </div>
+    <%= link_to "New Cycle", new_planning_cycle_path, class: "planning-btn planning-btn--primary" %>
+  </header>
+
+  <section class="planning-table-wrap">
+    <table class="planning-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Duration</th>
+          <th>Deliverables</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @cycles.each do |cycle| %>
+          <tr>
+            <td data-label="Name"><strong><%= cycle.name %></strong></td>
+            <td data-label="Start"><%= cycle.start_date.strftime("%b %d, %Y") %></td>
+            <td data-label="End"><%= cycle.end_date.strftime("%b %d, %Y") %></td>
+            <td data-label="Duration"><%= (cycle.end_date - cycle.start_date).to_i %> days</td>
+            <td data-label="Deliverables"><%= cycle.deliverables.size %></td>
+            <td data-label="Status">
+              <% if Date.current.between?(cycle.start_date, cycle.end_date) %>
+                <span class="planning-badge planning-badge--success">Active</span>
+              <% elsif cycle.start_date > Date.current %>
+                <span class="planning-badge planning-badge--info">Upcoming</span>
+              <% else %>
+                <span class="planning-badge planning-badge--neutral">Completed</span>
+              <% end %>
+            </td>
+            <td class="planning-table__actions">
+              <%= link_to "Plan", plan_planning_cycle_path(cycle), class: "planning-btn planning-btn--small planning-btn--primary" %>
+              <%= link_to "Edit", edit_planning_cycle_path(cycle), class: "planning-link" %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @cycles.empty? %>
+          <tr>
+            <td colspan="7" class="planning-table__empty">No cycles registered yet.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+</div>

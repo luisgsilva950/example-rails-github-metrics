@@ -1,0 +1,20 @@
+<% content_for(:title) { "New Cycle — Capacity Planning" } %>
+
+<div class="planning-layout">
+  <header class="planning-header">
+    <div>
+      <p class="planning-header__eyebrow">Sprints</p>
+      <h1>New Cycle</h1>
+      <p>Create a new development cycle (sprint).</p>
+    </div>
+    <%= link_to "Back to Cycles", planning_cycles_path, class: "planning-btn" %>
+  </header>
+
+  <section class="planning-form-card">
+    <%= render "planning/cycles/form",
+              cycle: @cycle,
+              url: planning_cycles_path,
+              method: :post,
+              submit_label: "Create Cycle" %>
+  </section>
+</div>

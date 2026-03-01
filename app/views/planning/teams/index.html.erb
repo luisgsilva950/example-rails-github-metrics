@@ -1,0 +1,42 @@
+<% content_for(:title) { "Teams — Capacity Planning" } %>
+
+<div class="planning-layout">
+  <header class="planning-header">
+    <div>
+      <p class="planning-header__eyebrow">Management</p>
+      <h1>Teams</h1>
+      <p>All registered teams available for capacity planning.</p>
+    </div>
+    <%= link_to "New Team", new_planning_team_path, class: "planning-btn planning-btn--primary" %>
+  </header>
+
+  <section class="planning-table-wrap">
+    <table class="planning-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Developers</th>
+          <th>Deliverables</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @teams.each do |team| %>
+          <tr>
+            <td data-label="Name"><strong><%= team.name %></strong></td>
+            <td data-label="Developers"><%= team.developers.size %></td>
+            <td data-label="Deliverables"><%= team.deliverables.size %></td>
+            <td data-label="Created"><%= team.created_at.strftime("%b %d, %Y") %></td>
+            <td><%= link_to "Edit", edit_planning_team_path(team), class: "planning-link" %></td>
+          </tr>
+        <% end %>
+        <% if @teams.empty? %>
+          <tr>
+            <td colspan="5" class="planning-table__empty">No teams registered yet.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+</div>

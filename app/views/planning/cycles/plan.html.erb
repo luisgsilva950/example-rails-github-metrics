@@ -1,0 +1,676 @@
+<% content_for(:title) { "Plan #{@cycle.name} — Capacity Planning" } %>
+
+<%# ── Pre-compute shared data ── %>
+<% total_capacity = @capacities.sum(&:gross_hours) %>
+<% all_allocs = @deliverables.flat_map(&:deliverable_allocations) %>
+<% total_alloc_ops = all_allocs.sum(&:operational_hours) %>
+<% total_absence_hours = @developer_absences.values.flatten.sum { |a|
+     overlap_start = [a.start_date, @cycle.start_date].max
+     overlap_end = [a.end_date, @cycle.end_date].min
+     (overlap_start..overlap_end).count { |d| !d.saturday? && !d.sunday? && !@holiday_dates.include?(d) } * 8
+   } %>
+<% total_unallocated_ops = @capacities.sum { |cap| @cycle.unallocated_operational_hours_for(cap.developer_id) } %>
+<% plannable_capacity = total_capacity - total_absence_hours - total_alloc_ops - total_unallocated_ops %>
+<% total_effort = @deliverables.sum(&:total_effort_hours) %>
+<% total_allocated = all_allocs.sum(&:allocated_hours) %>
+<% remaining = plannable_capacity - total_allocated %>
+<% work_days = (@cycle.start_date..@cycle.end_date).select { |d| !d.saturday? && !d.sunday? } %>
+<% palette = %w[#58a6ff #bc8cff #f778ba #d29922 #3fb950 #f85149 #39d2c0 #a5d6a7 #f0883e #7c72ff] %>
+<% deliverable_colors = {} %>
+<% @deliverables.each_with_index { |d, i| deliverable_colors[d.id] = palette[i % palette.size] } %>
+
+<div class="plan-dark" data-controller="slideout" data-action="keydown.esc@document->slideout#closeOnEscape">
+
+  <%# ═══════════════════════════════════════ %>
+  <%# ── Header bar ─────────────────────── %>
+  <%# ═══════════════════════════════════════ %>
+  <header class="pln-header">
+    <div class="pln-header__left">
+      <h1 class="pln-header__title"><%= @cycle.name %></h1>
+      <span class="pln-header__dates"><%= @cycle.start_date.strftime("%b %d") %> – <%= @cycle.end_date.strftime("%b %d, %Y") %></span>
+    </div>
+    <div class="pln-header__actions">
+      <button type="button" class="pln-action-btn" data-action="click->slideout#open" data-slideout-key-param="roster" data-slideout-title-param="Team Roster">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 3.5a2 2 0 114 0 2 2 0 01-4 0zM2 12.5c0-2.5 2-4 5.5-4s5.5 1.5 5.5 4v.5H2v-.5z"/></svg>
+        Team
+      </button>
+      <button type="button" class="pln-action-btn" data-action="click->slideout#open" data-slideout-key-param="deliverables" data-slideout-title-param="Deliverables">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 2.5h12.5a.75.75 0 01.75.75v10a.75.75 0 01-.75.75H1.75a.75.75 0 01-.75-.75v-10a.75.75 0 01.75-.75zm.75 1.5v8.5h11V4H2.5z"/></svg>
+        Deliverables
+      </button>
+      <button type="button" class="pln-action-btn" data-action="click->slideout#open" data-slideout-key-param="operations" data-slideout-title-param="Operational Activities">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M7.429 1.525a3.5 3.5 0 011.142 0l.598.12a.603.603 0 00.544-.155l.457-.39a3.5 3.5 0 01.808.808l-.39.457a.603.603 0 00-.155.544l.12.598a3.5 3.5 0 010 1.142l-.12.598a.603.603 0 00.155.544l.39.457a3.5 3.5 0 01-.808.808l-.457-.39a.603.603 0 00-.544-.155l-.598.12a3.5 3.5 0 01-1.142 0l-.598-.12a.603.603 0 00-.544.155l-.457.39a3.5 3.5 0 01-.808-.808l.39-.457a.603.603 0 00.155-.544l-.12-.598a3.5 3.5 0 010-1.142l.12-.598a.603.603 0 00-.155-.544l-.39-.457a3.5 3.5 0 01.808-.808l.457.39c.152.13.357.17.544.155l.598-.12zM8 6a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/><path d="M3 12.5h10v1H3v-1zm0-2h10v1H3v-1z"/></svg>
+        Operations
+      </button>
+      <span class="pln-header__sep"></span>
+      <%= link_to "Edit Cycle", edit_planning_cycle_path(@cycle), class: "pln-action-btn pln-action-btn--ghost" %>
+      <%= link_to "← Cycles", planning_cycles_path, class: "pln-action-btn pln-action-btn--ghost" %>
+    </div>
+  </header>
+
+  <%# ═══════════════════════════════════════ %>
+  <%# ── Summary metrics strip ──────────── %>
+  <%# ═══════════════════════════════════════ %>
+  <div class="pln-metrics">
+    <div class="pln-metric">
+      <span class="pln-metric__val"><%= @capacities.size %></span>
+      <span class="pln-metric__lbl">Devs</span>
+    </div>
+    <div class="pln-metric">
+      <span class="pln-metric__val"><%= total_capacity %>h</span>
+      <span class="pln-metric__lbl">Gross</span>
+    </div>
+    <% if @operational_activities.any? %>
+      <% total_operational_reserve = @capacities.sum { |cap| @cycle.operational_hours_for(cap.developer_id) } %>
+      <div class="pln-metric pln-metric--ops">
+        <span class="pln-metric__val">−<%= total_operational_reserve %>h</span>
+        <span class="pln-metric__lbl">Ops</span>
+      </div>
+    <% end %>
+    <% if @holiday_dates.any? %>
+      <div class="pln-metric pln-metric--holiday">
+        <span class="pln-metric__val"><%= @holiday_dates.size %>d</span>
+        <span class="pln-metric__lbl">Holidays</span>
+      </div>
+    <% end %>
+    <% if total_absence_hours > 0 %>
+      <div class="pln-metric pln-metric--absence">
+        <span class="pln-metric__val">−<%= total_absence_hours %>h</span>
+        <span class="pln-metric__lbl">Absences</span>
+      </div>
+    <% end %>
+    <div class="pln-metric">
+      <span class="pln-metric__val"><%= plannable_capacity %>h</span>
+      <span class="pln-metric__lbl">Plannable</span>
+    </div>
+    <div class="pln-metric">
+      <span class="pln-metric__val"><%= total_effort %>h</span>
+      <span class="pln-metric__lbl">Effort</span>
+    </div>
+    <div class="pln-metric pln-metric--accent">
+      <span class="pln-metric__val"><%= remaining %>h</span>
+      <span class="pln-metric__lbl">Remaining</span>
+    </div>
+  </div>
+
+  <%# ═══════════════════════════════════════ %>
+  <%# ── Deliverables strip ─────────────── %>
+  <%# ═══════════════════════════════════════ %>
+  <% if @deliverables.any? %>
+    <div class="pln-deliverable-strip">
+      <% @deliverables.each do |d| %>
+        <% alloc_total = d.deliverable_allocations.sum(&:allocated_hours) %>
+        <% pct = d.total_effort_hours > 0 ? [(alloc_total.to_f / d.total_effort_hours * 100).round, 100].min : 0 %>
+        <button type="button" class="pln-dtag<%= ' pln-dtag--done' if pct >= 100 %>"
+                data-action="click->slideout#open"
+                data-slideout-key-param="deliverable-<%= d.id %>"
+                data-slideout-title-param="<%= d.title %>">
+          <span class="pln-dtag__dot" style="background:<%= deliverable_colors[d.id] %>"></span>
+          <span class="pln-dtag__name"><%= d.title.truncate(24) %></span>
+          <span class="pln-dtag__pct"><%= alloc_total %>/<%= d.total_effort_hours %>h</span>
+          <span class="pln-dtag__bar"><span class="pln-dtag__fill" style="width:<%= pct %>%; background:<%= deliverable_colors[d.id] %>"></span></span>
+        </button>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# ═══════════════════════════════════════ %>
+  <%# ── GANTT CHART (hero) ─────────────── %>
+  <%# ═══════════════════════════════════════ %>
+  <% if @capacities.any? && work_days.any? %>
+    <div class="pln-gantt-section">
+      <div class="gantt-wrap"
+           data-controller="gantt-drag gantt-click"
+           data-gantt-drag-cycle-id-value="<%= @cycle.id %>"
+           data-gantt-drag-cycle-start-value="<%= @cycle.start_date %>"
+           data-gantt-drag-cycle-end-value="<%= @cycle.end_date %>"
+           data-gantt-click-cycle-id-value="<%= @cycle.id %>"
+           data-gantt-click-deliverables-value="<%= @deliverables.map { |d| { id: d.id, title: d.title, color: deliverable_colors[d.id] } }.to_json %>">
+        <table class="gantt">
+          <thead>
+            <tr>
+              <th class="gantt__label-col">Developer</th>
+              <% work_days.each do |day| %>
+                <th class="gantt__day-col<%= ' gantt__day-col--today' if day == Date.current %><%= ' gantt__day-col--holiday' if @holiday_dates.include?(day) %>">
+                  <span class="gantt__day-name"><%= day.strftime("%a") %></span>
+                  <span class="gantt__day-date"><%= day.strftime("%d/%m") %></span>
+                </th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% @capacities.each do |cap| %>
+              <% dev_allocs = DeliverableAllocation
+                   .includes(:deliverable)
+                   .joins(:deliverable)
+                   .where(developer: cap.developer, deliverables: { cycle_id: @cycle.id })
+                   .order(:start_date) %>
+              <% dev_absences = @developer_absences[cap.developer_id] || [] %>
+              <% dev_ops = @developer_operational_map[cap.developer_id] || [] %>
+              <% op_skip_days = Set.new %>
+              <tr data-developer-id="<%= cap.developer_id %>">
+                <td class="gantt__label-cell">
+                  <button type="button" class="gantt__dev-btn"
+                          data-action="click->slideout#open"
+                          data-slideout-key-param="dev-<%= cap.developer_id %>"
+                          data-slideout-title-param="<%= cap.developer.name %>">
+                    <%= cap.developer.name %>
+                  </button>
+                </td>
+                <% work_days.each do |day| %>
+                  <% next if op_skip_days.include?(day) %>
+                  <% if @holiday_dates.include?(day) %>
+                    <td class="gantt__cell gantt__cell--holiday" data-day="<%= day.to_s %>">
+                      <span class="gantt__bar-label gantt__bar-label--holiday">Holiday</span>
+                    </td>
+                  <% else %>
+                  <% absent_today = dev_absences.any? { |a| day >= a.start_date && day <= a.end_date } %>
+                  <% if absent_today %>
+                    <td class="gantt__cell gantt__cell--absence" data-day="<%= day.to_s %>">
+                      <span class="gantt__bar-label gantt__bar-label--absence">Absent</span>
+                    </td>
+                  <% else %>
+                    <% op_match = dev_ops.find { |a| day >= a.start_date && day <= a.end_date } %>
+                    <% if op_match %>
+                    <% op_span = 1 %>
+                    <% day_idx = work_days.index(day) %>
+                    <% while (nxt_idx = day_idx + op_span) < work_days.size
+                         nxt = work_days[nxt_idx]
+                         break if @holiday_dates.include?(nxt)
+                         break if dev_absences.any? { |a| nxt >= a.start_date && nxt <= a.end_date }
+                         nxt_op = dev_ops.find { |a| nxt >= a.start_date && nxt <= a.end_date }
+                         break unless nxt_op && nxt_op.id == op_match.id
+                         op_skip_days << nxt
+                         op_span += 1
+                       end %>
+                    <td class="gantt__cell gantt__cell--operational" data-day="<%= day.to_s %>"<%= " colspan=#{op_span}" if op_span > 1 %> style="background: repeating-linear-gradient(45deg, <%= op_match.color %>22, <%= op_match.color %>22 4px, <%= op_match.color %>11 4px, <%= op_match.color %>11 8px);">
+                      <span class="gantt__bar-label" style="color: <%= op_match.color %>; font-weight: 600;"><%= op_match.name&.humanize %></span>
+                    </td>
+                  <% else %>
+                    <% matching = dev_allocs.select { |a| day >= a.start_date && day <= a.end_date } %>
+                    <% if matching.any? %>
+                      <% alloc = matching.first %>
+                      <% is_start = day == [alloc.start_date, work_days.first].max %>
+                      <% is_start = true if day == dev_allocs.select { |a| day >= a.start_date && day <= a.end_date }.first.start_date %>
+                      <% day_idx = work_days.index(day) %>
+                      <% prev_day = day_idx && day_idx > 0 ? work_days[day_idx - 1] : nil %>
+                      <% next_day = day_idx ? work_days[day_idx + 1] : nil %>
+                      <% prev_is_op = prev_day && dev_ops.any? { |a| prev_day >= a.start_date && prev_day <= a.end_date } %>
+                      <% is_start = true if prev_is_op && day >= alloc.start_date %>
+                      <% prev_is_alloc = prev_day && matching.any? { |a| prev_day >= a.start_date && prev_day <= a.end_date } && !prev_is_op && !@holiday_dates.include?(prev_day) && !dev_absences.any? { |a| prev_day >= a.start_date && prev_day <= a.end_date } %>
+                      <% next_is_op = next_day && dev_ops.any? { |a| next_day >= a.start_date && next_day <= a.end_date } %>
+                      <% next_is_alloc = next_day && matching.any? { |a| next_day >= a.start_date && next_day <= a.end_date } && !next_is_op && !@holiday_dates.include?(next_day) && !dev_absences.any? { |a| next_day >= a.start_date && next_day <= a.end_date } %>
+                      <% visual_start = !prev_is_alloc %>
+                      <% visual_end = !next_is_alloc %>
+                      <td class="gantt__cell gantt__cell--filled gantt__cell--has-tooltip<%= ' gantt__cell--alloc-start' if visual_start %><%= ' gantt__cell--alloc-end' if visual_end %>" data-tooltip="<%= alloc.deliverable.title %> · <%= alloc.start_date.strftime('%d/%m') %> – <%= alloc.end_date.strftime('%d/%m') %>" data-day="<%= day.to_s %>" data-allocation-id="<%= alloc.id %>" data-alloc-start="<%= alloc.start_date %>" data-alloc-end="<%= alloc.end_date %>" data-action="mousedown->gantt-drag#startDrag" style="background: <%= deliverable_colors[alloc.deliverable_id] %>30; border-left: <%= visual_start ? "3px solid #{deliverable_colors[alloc.deliverable_id]}" : 'none' %>; border-right: <%= visual_end ? "3px solid #{deliverable_colors[alloc.deliverable_id]}" : 'none' %>;">
+                        <% if visual_start %>
+                          <span class="gantt__resize-handle gantt__resize-handle--left" data-edge="start"></span>
+                        <% end %>
+                        <% if is_start %>
+                          <span class="gantt__bar-label" style="color: <%= deliverable_colors[alloc.deliverable_id] %>;">
+                            <%= alloc.deliverable.title.truncate(10) %>
+                          </span>
+                        <% end %>
+                        <% if visual_end %>
+                          <span class="gantt__resize-handle gantt__resize-handle--right" data-edge="end"></span>
+                        <% end %>
+                      </td>
+                    <% else %>
+                      <td class="gantt__cell gantt__cell--empty" data-day="<%= day.to_s %>" data-action="click->gantt-click#cellClicked"></td>
+                    <% end %>
+                  <% end %>
+                  <% end %>
+                  <% end %>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <%# Legend %>
+      <div class="gantt__legend">
+        <div class="gantt__legend-item">
+          <span class="gantt__legend-swatch gantt__legend-swatch--holiday"></span>
+          <span class="gantt__legend-text">Holiday</span>
+        </div>
+        <% @operational_activities.each do |activity| %>
+          <div class="gantt__legend-item">
+            <span class="gantt__legend-swatch" style="background: <%= activity.color %>;"></span>
+            <span class="gantt__legend-text"><%= activity.name&.humanize %></span>
+          </div>
+        <% end %>
+        <div class="gantt__legend-item">
+          <span class="gantt__legend-swatch gantt__legend-swatch--absence"></span>
+          <span class="gantt__legend-text">Absence</span>
+        </div>
+        <% deliverable_colors.each do |del_id, color| %>
+          <% del = @deliverables.find { |d| d.id == del_id } %>
+          <div class="gantt__legend-item">
+            <span class="gantt__legend-swatch" style="background: <%= color %>;"></span>
+            <span class="gantt__legend-text"><%= del.title %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% else %>
+    <div class="pln-empty-gantt">
+      <p>Add developers to this cycle to see the Gantt chart.</p>
+      <button type="button" class="pln-action-btn pln-action-btn--accent" data-action="click->slideout#open" data-slideout-key-param="roster" data-slideout-title-param="Team Roster">Add Developers</button>
+    </div>
+  <% end %>
+
+  <%# ═══════════════════════════════════════ %>
+  <%# ── SLIDE-OVER DRAWER ─────────────── %>
+  <%# ═══════════════════════════════════════ %>
+  <div class="slideout__backdrop" data-slideout-target="backdrop" data-action="click->slideout#backdropClick"></div>
+  <aside class="slideout" data-slideout-target="drawer">
+    <div class="slideout__header">
+      <h2 class="slideout__title" data-slideout-target="title"></h2>
+      <button type="button" class="slideout__close" data-action="click->slideout#close">×</button>
+    </div>
+    <div class="slideout__body">
+
+      <%# ── Panel: Team Roster ── %>
+      <div data-slideout-target="section" data-slideout-key="roster" style="display:none">
+        <% if @available_developers.any? %>
+          <div class="so-form-block">
+            <h3 class="so-form-block__title">Add Developer</h3>
+            <%= form_with(
+                  url: planning_cycle_cycle_capacities_path(@cycle),
+                  method: :post,
+                  local: true,
+                  class: "so-form"
+                ) do |f| %>
+              <div class="so-field">
+                <label>Developer</label>
+                <%= f.select :developer_id,
+                      @available_developers.map { |d| ["#{d.name} (#{d.domain_stack.titleize} · #{d.team.name})", d.id] },
+                      { prompt: "Select developer…" },
+                      { name: "developer_cycle_capacity[developer_id]", id: "cap_developer_id", class: "so-input" } %>
+              </div>
+              <div class="so-field">
+                <label>Gross Hours</label>
+                <input type="number" name="developer_cycle_capacity[gross_hours]" step="0.5" min="0" value="<%= @cycle.gross_hours %>" required class="so-input">
+              </div>
+              <div class="so-form__actions">
+                <button type="submit" class="pln-action-btn pln-action-btn--accent">Add Developer</button>
+                <%= form_with(
+                      url: add_all_planning_cycle_cycle_capacities_path(@cycle),
+                      method: :post,
+                      local: true,
+                      style: "display:inline"
+                    ) do %>
+                  <button type="submit" class="pln-action-btn pln-action-btn--ghost">Add All</button>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if @capacities.any? %>
+          <div class="so-list">
+            <% @capacities.each do |cap| %>
+              <% dev_allocs = DeliverableAllocation
+                   .joins(:deliverable)
+                   .where(developer: cap.developer, deliverables: { cycle_id: @cycle.id }) %>
+              <% dev_alloc_work = dev_allocs.sum(:allocated_hours) + dev_allocs.sum(:operational_hours) %>
+              <% dev_absences = (@developer_absences[cap.developer_id] || []) %>
+              <% dev_absence_hours = dev_absences.sum { |a|
+                   overlap_start = [a.start_date, @cycle.start_date].max
+                   overlap_end = [a.end_date, @cycle.end_date].min
+                   (overlap_start..overlap_end).count { |d| !d.saturday? && !d.sunday? && !@holiday_dates.include?(d) } * 8
+                 } %>
+              <% dev_unalloc_ops = @cycle.unallocated_operational_hours_for(cap.developer_id) %>
+              <% dev_available = cap.gross_hours - dev_alloc_work - dev_absence_hours - dev_unalloc_ops %>
+              <div class="so-dev-row">
+                <div class="so-dev-row__info">
+                  <strong class="so-dev-row__name"><%= cap.developer.name %></strong>
+                  <span class="so-dev-row__meta"><%= cap.developer.team.name %> · <%= cap.developer.domain_stack.titleize %></span>
+                </div>
+                <div class="so-dev-row__hours">
+                  <span class="so-dev-row__gross"><%= cap.gross_hours %>h</span>
+                  <span class="so-dev-row__avail <%= dev_available < 0 ? 'so-dev-row__avail--danger' : dev_available == 0 ? 'so-dev-row__avail--muted' : 'so-dev-row__avail--ok' %>"><%= dev_available %>h avail</span>
+                </div>
+                <%= form_with(
+                      url: planning_cycle_cycle_capacity_path(@cycle, cap),
+                      method: :delete,
+                      local: true,
+                      style: "display:inline"
+                    ) do %>
+                  <button type="submit" class="so-dev-row__remove" data-confirm="Remove this developer from the cycle?" title="Remove">×</button>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="so-empty">No developers assigned yet.</p>
+        <% end %>
+      </div>
+
+      <%# ── Panel: Deliverables overview ── %>
+      <div data-slideout-target="section" data-slideout-key="deliverables" style="display:none">
+        <% if @deliverables.any? %>
+          <div class="so-list">
+            <% @deliverables.each do |deliverable| %>
+              <% alloc_total = deliverable.deliverable_allocations.sum(&:allocated_hours) %>
+              <% pct = deliverable.total_effort_hours > 0 ? [(alloc_total.to_f / deliverable.total_effort_hours * 100).round, 100].min : 0 %>
+              <button type="button" class="so-deliverable-row"
+                      data-action="click->slideout#open"
+                      data-slideout-key-param="deliverable-<%= deliverable.id %>"
+                      data-slideout-title-param="<%= deliverable.title %>">
+                <span class="so-deliverable-row__dot" style="background:<%= deliverable_colors[deliverable.id] %>"></span>
+                <div class="so-deliverable-row__info">
+                  <strong><%= deliverable.title %></strong>
+                  <span class="so-deliverable-row__meta">
+                    <%= deliverable.deliverable_type.titleize %> · <%= deliverable.specific_stack.titleize %> · <%= deliverable.team.name %>
+                  </span>
+                </div>
+                <div class="so-deliverable-row__effort">
+                  <span><%= alloc_total %>/<%= deliverable.total_effort_hours %>h</span>
+                  <div class="so-progress"><span class="so-progress__fill" style="width:<%= pct %>%; background:<%= deliverable_colors[deliverable.id] %>"></span></div>
+                </div>
+                <span class="so-deliverable-row__arrow">›</span>
+              </button>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="so-empty">No deliverables in this cycle. <%= link_to "Go to Deliverables", planning_deliverables_path, class: "so-link" %>.</p>
+        <% end %>
+      </div>
+
+      <%# ── Panel: Individual deliverable ── %>
+      <% @deliverables.each do |deliverable| %>
+        <div data-slideout-target="section" data-slideout-key="deliverable-<%= deliverable.id %>" style="display:none">
+          <% alloc_total = deliverable.deliverable_allocations.sum(&:allocated_hours) %>
+          <% pct = deliverable.total_effort_hours > 0 ? [(alloc_total.to_f / deliverable.total_effort_hours * 100).round, 100].min : 0 %>
+
+          <div class="so-del-header">
+            <button type="button" class="so-back-btn" data-action="click->slideout#open" data-slideout-key-param="deliverables" data-slideout-title-param="Deliverables">← Back</button>
+            <div class="so-del-badges">
+              <span class="so-badge so-badge--<%= deliverable.deliverable_type == 'spillover' ? 'warning' : 'info' %>"><%= deliverable.deliverable_type.titleize %></span>
+              <span class="so-badge"><%= deliverable.specific_stack.titleize %></span>
+              <span class="so-badge so-badge--<%= deliverable.status == 'done' ? 'success' : 'info' %>"><%= deliverable.status.titleize %></span>
+              <span class="so-del-team"><%= deliverable.team.name %></span>
+              <% if deliverable.jira_link.present? %>
+                <a href="<%= deliverable.jira_link %>" target="_blank" rel="noopener" class="so-link">Jira ↗</a>
+              <% end %>
+            </div>
+            <div class="so-del-effort">
+              <span class="so-del-effort__label"><%= alloc_total %>/<%= deliverable.total_effort_hours %>h allocated</span>
+              <div class="so-progress so-progress--lg"><span class="so-progress__fill" style="width:<%= pct %>%; background:<%= deliverable_colors[deliverable.id] %>"></span></div>
+            </div>
+          </div>
+
+          <%# Current allocations %>
+          <% if deliverable.deliverable_allocations.any? %>
+            <div class="so-alloc-list">
+              <% deliverable.deliverable_allocations.each do |alloc| %>
+                <details class="so-alloc-item">
+                  <summary class="so-alloc-item__summary">
+                    <span class="so-alloc-item__name"><%= alloc.developer.name %></span>
+                    <span class="so-alloc-item__dates"><%= alloc.start_date.strftime("%b %d") %> – <%= alloc.end_date.strftime("%b %d") %></span>
+                    <span class="so-alloc-item__hours"><%= alloc.allocated_hours %>h + ⚙️<%= alloc.operational_hours %>h</span>
+                    <span class="so-alloc-item__edit">✎</span>
+                    <%= form_with(
+                          url: planning_cycle_cycle_allocation_path(@cycle, alloc),
+                          method: :delete,
+                          local: true,
+                          data: { turbo: false },
+                          style: "display:inline"
+                        ) do %>
+                      <button type="submit" title="Remove" class="so-alloc-item__remove">×</button>
+                    <% end %>
+                  </summary>
+                  <div class="so-alloc-edit"
+                       data-controller="allocation-dates"
+                       data-allocation-dates-allocations-value="<%= @developer_allocations.to_json %>"
+                       data-allocation-dates-deliverable-value="<%= deliverable.id %>">
+                    <%= form_with(
+                          url: planning_cycle_cycle_allocation_path(@cycle, alloc),
+                          method: :patch,
+                          local: true,
+                          data: { turbo: false },
+                          class: "so-form so-form--row"
+                        ) do %>
+                      <input type="hidden" value="<%= alloc.developer_id %>" data-allocation-dates-target="developer">
+                      <div class="planning-date-range" data-controller="date-range">
+                        <label>Period</label>
+                        <div class="planning-date-range__display" tabindex="0"
+                             data-date-range-target="display"
+                             data-action="click->date-range#openStart keydown.enter->date-range#openStart">
+                          Select dates…
+                        </div>
+                        <input type="date" name="deliverable_allocation[start_date]" class="planning-date-range__hidden-input"
+                               value="<%= alloc.start_date %>" min="<%= @cycle.start_date %>" max="<%= @cycle.end_date %>" required
+                               data-date-range-target="startDate" data-allocation-dates-target="startDate"
+                               data-action="change->date-range#startChanged change->allocation-dates#checkDate">
+                        <input type="date" name="deliverable_allocation[end_date]" class="planning-date-range__hidden-input"
+                               value="<%= alloc.end_date %>" min="<%= @cycle.start_date %>" max="<%= @cycle.end_date %>" required
+                               data-date-range-target="endDate" data-allocation-dates-target="endDate"
+                               data-action="change->date-range#endChanged change->allocation-dates#checkDate">
+                      </div>
+                      <button type="submit" class="pln-action-btn pln-action-btn--accent pln-action-btn--sm">Save</button>
+                    <% end %>
+                  </div>
+                </details>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%# Add allocation %>
+          <% if @cycle_developers.any? %>
+            <div class="so-form-block">
+              <h3 class="so-form-block__title">Assign Developer</h3>
+              <div data-controller="allocation-dates"
+                   data-allocation-dates-allocations-value="<%= @developer_allocations.to_json %>"
+                   data-allocation-dates-deliverable-value="<%= deliverable.id %>">
+                <%= form_with(
+                      url: planning_cycle_cycle_allocations_path(@cycle),
+                      method: :post,
+                      local: true,
+                      data: { turbo: false },
+                      class: "so-form"
+                    ) do |f| %>
+                  <input type="hidden" name="deliverable_allocation[deliverable_id]" value="<%= deliverable.id %>">
+                  <div class="so-field">
+                    <label>Developer</label>
+                    <select name="deliverable_allocation[developer_id]" required class="so-input"
+                            data-allocation-dates-target="developer" data-action="change->allocation-dates#developerChanged">
+                      <option value="">Select…</option>
+                      <% already_assigned = deliverable.deliverable_allocations.map(&:developer_id) %>
+                      <% @cycle_developers.reject { |d| already_assigned.include?(d.id) }.each do |dev| %>
+                        <option value="<%= dev.id %>"><%= dev.name %></option>
+                      <% end %>
+                    </select>
+                  </div>
+                  <div class="planning-date-range" data-controller="date-range">
+                    <label>Period</label>
+                    <div class="planning-date-range__display" tabindex="0"
+                         data-date-range-target="display"
+                         data-action="click->date-range#openStart keydown.enter->date-range#openStart">
+                      Select dates…
+                    </div>
+                    <input type="date" name="deliverable_allocation[start_date]" class="planning-date-range__hidden-input"
+                           value="<%= @cycle.start_date %>" min="<%= @cycle.start_date %>" max="<%= @cycle.end_date %>" required
+                           data-date-range-target="startDate" data-allocation-dates-target="startDate"
+                           data-action="change->date-range#startChanged change->allocation-dates#checkDate">
+                    <input type="date" name="deliverable_allocation[end_date]" class="planning-date-range__hidden-input"
+                           value="<%= @cycle.end_date %>" min="<%= @cycle.start_date %>" max="<%= @cycle.end_date %>" required
+                           data-date-range-target="endDate" data-allocation-dates-target="endDate"
+                           data-action="change->date-range#endChanged change->allocation-dates#checkDate">
+                  </div>
+                  <button type="submit" class="pln-action-btn pln-action-btn--accent">Assign</button>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%# ── Panel: Individual developer ── %>
+      <% @capacities.each do |cap| %>
+        <div data-slideout-target="section" data-slideout-key="dev-<%= cap.developer_id %>" style="display:none">
+          <% dev_allocs = DeliverableAllocation
+               .includes(:deliverable)
+               .joins(:deliverable)
+               .where(developer: cap.developer, deliverables: { cycle_id: @cycle.id }) %>
+          <% dev_alloc_work = dev_allocs.sum(:allocated_hours) + dev_allocs.sum(:operational_hours) %>
+          <% dev_absences_list = (@developer_absences[cap.developer_id] || []) %>
+          <% dev_absence_hours = dev_absences_list.sum { |a|
+               overlap_start = [a.start_date, @cycle.start_date].max
+               overlap_end = [a.end_date, @cycle.end_date].min
+               (overlap_start..overlap_end).count { |d| !d.saturday? && !d.sunday? && !@holiday_dates.include?(d) } * 8
+             } %>
+          <% dev_unalloc_ops = @cycle.unallocated_operational_hours_for(cap.developer_id) %>
+          <% dev_allocated = dev_allocs.sum(:allocated_hours) %>
+          <% dev_available = cap.gross_hours - dev_alloc_work - dev_absence_hours - dev_unalloc_ops %>
+
+          <div class="so-dev-detail">
+            <div class="so-dev-detail__badges">
+              <span class="so-badge"><%= cap.developer.team.name %></span>
+              <span class="so-badge"><%= cap.developer.domain_stack.titleize %></span>
+            </div>
+            <div class="so-dev-detail__stats">
+              <div class="so-stat">
+                <span class="so-stat__val"><%= cap.gross_hours %>h</span>
+                <span class="so-stat__lbl">Gross</span>
+              </div>
+              <div class="so-stat">
+                <span class="so-stat__val"><%= dev_allocated %>h</span>
+                <span class="so-stat__lbl">Allocated</span>
+              </div>
+              <div class="so-stat">
+                <span class="so-stat__val <%= dev_available < 0 ? 'so-stat__val--danger' : dev_available == 0 ? 'so-stat__val--muted' : 'so-stat__val--ok' %>"><%= dev_available %>h</span>
+                <span class="so-stat__lbl">Available</span>
+              </div>
+            </div>
+          </div>
+
+          <% if dev_allocs.any? %>
+            <h3 class="so-form-block__title">Allocations</h3>
+            <div class="so-alloc-list">
+              <% dev_allocs.each do |alloc| %>
+                <div class="so-alloc-item__summary">
+                  <span class="so-alloc-item__dot" style="background:<%= deliverable_colors[alloc.deliverable_id] %>"></span>
+                  <span class="so-alloc-item__name"><%= alloc.deliverable.title %></span>
+                  <span class="so-alloc-item__dates"><%= alloc.start_date.strftime("%b %d") %> – <%= alloc.end_date.strftime("%b %d") %></span>
+                  <span class="so-alloc-item__hours"><%= alloc.allocated_hours %>h</span>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="so-dev-detail__footer">
+            <%= form_with(
+                  url: planning_cycle_cycle_capacity_path(@cycle, cap),
+                  method: :delete,
+                  local: true,
+                  style: "display:inline"
+                ) do %>
+              <button type="submit" class="pln-action-btn pln-action-btn--danger" data-confirm="Remove this developer from the cycle?">Remove from Cycle</button>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <%# ── Panel: Operational Activities ── %>
+      <div data-slideout-target="section" data-slideout-key="operations" style="display:none">
+        <div class="so-form-block" data-controller="operational-mode">
+          <h3 class="so-form-block__title">Add Activity</h3>
+          <%= form_with(
+                url: planning_cycle_cycle_operational_activities_path(@cycle),
+                method: :post,
+                local: true,
+                data: { turbo: false },
+                class: "so-form"
+              ) do |f| %>
+            <div class="so-field">
+              <label>Activity</label>
+              <select name="cycle_operational_activity[name]" required class="so-input">
+                <option value="">Select activity…</option>
+                <% CycleOperationalActivity::ACTIVITY_TYPES.each do |type| %>
+                  <option value="<%= type %>"><%= type.humanize %></option>
+                <% end %>
+              </select>
+            </div>
+            <div class="so-field">
+              <label>Developer</label>
+              <select name="cycle_operational_activity[developer_id]" class="so-input">
+                <option value="">All developers (team-wide)</option>
+                <% @cycle_developers.each do |dev| %>
+                  <option value="<%= dev.id %>"><%= dev.name %></option>
+                <% end %>
+              </select>
+            </div>
+            <div class="so-field">
+              <label>Mode</label>
+              <select class="so-input" data-operational-mode-target="mode" data-action="change->operational-mode#toggle">
+                <option value="date_range">Date range</option>
+                <option value="recurring">Recurring (every weekday)</option>
+              </select>
+            </div>
+            <div data-operational-mode-target="dateFields" data-controller="date-range" class="planning-date-range">
+              <label>Period</label>
+              <div class="planning-date-range__display" tabindex="0"
+                   data-date-range-target="display"
+                   data-action="click->date-range#openStart keydown.enter->date-range#openStart">
+                Select dates…
+              </div>
+              <input type="date" name="cycle_operational_activity[start_date]" class="planning-date-range__hidden-input"
+                     value="<%= @cycle.start_date %>" min="<%= @cycle.start_date %>" max="<%= @cycle.end_date %>" required
+                     data-date-range-target="startDate" data-operational-mode-target="startDate"
+                     data-action="change->date-range#startChanged">
+              <input type="date" name="cycle_operational_activity[end_date]" class="planning-date-range__hidden-input"
+                     value="<%= @cycle.end_date %>" min="<%= @cycle.start_date %>" max="<%= @cycle.end_date %>" required
+                     data-date-range-target="endDate" data-operational-mode-target="endDate"
+                     data-action="change->date-range#endChanged">
+            </div>
+            <div class="so-field" data-operational-mode-target="recurringField" style="display: none;">
+              <label>Every</label>
+              <select name="cycle_operational_activity[recurrence_day]" class="so-input">
+                <option value="">Select day…</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+              </select>
+            </div>
+            <button type="submit" class="pln-action-btn pln-action-btn--accent">Add Activity</button>
+          <% end %>
+        </div>
+
+        <% if @operational_activities.any? %>
+          <div class="so-list">
+            <% @operational_activities.each do |activity| %>
+              <div class="so-ops-row">
+                <span class="so-ops-row__dot" style="background:<%= activity.color %>"></span>
+                <div class="so-ops-row__info">
+                  <strong><%= activity.name&.humanize %></strong>
+                  <span class="so-ops-row__meta">
+                    <%= activity.team_wide? ? "All developers" : activity.developer.name %>
+                    · <%= activity.start_date.strftime("%b %d") %> – <%= activity.end_date.strftime("%b %d") %>
+                    (<%= activity.work_days %>d)
+                  </span>
+                </div>
+                <%= form_with(
+                      url: planning_cycle_cycle_operational_activity_path(@cycle, activity),
+                      method: :delete,
+                      local: true,
+                      data: { turbo: false },
+                      style: "display:inline"
+                    ) do %>
+                  <button type="submit" title="Remove" class="so-ops-row__remove">×</button>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="so-empty">No operational activities configured.</p>
+        <% end %>
+      </div>
+
+    </div>
+  </aside>
+</div>

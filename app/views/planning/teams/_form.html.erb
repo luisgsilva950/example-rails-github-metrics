@@ -1,0 +1,21 @@
+<%= form_with(model: team, url: url, method: method, class: "planning-form") do |f| %>
+  <% if team.errors.any? %>
+    <div class="planning-form__errors">
+      <p><strong><%= pluralize(team.errors.count, "error") %> prevented this team from being saved:</strong></p>
+      <ul>
+        <% team.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="planning-form__field">
+    <%= f.label :name, "Team Name" %>
+    <%= f.text_field :name, placeholder: "e.g. Digital Farm", autofocus: true %>
+  </div>
+
+  <div class="planning-form__actions">
+    <%= f.submit submit_label, class: "planning-btn planning-btn--primary" %>
+  </div>
+<% end %>

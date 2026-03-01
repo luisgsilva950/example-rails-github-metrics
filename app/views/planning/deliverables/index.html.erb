@@ -1,0 +1,95 @@
+<% content_for(:title) { "Deliverables — Capacity Planning" } %>
+
+<div class="planning-layout">
+  <header class="planning-header">
+    <div>
+      <p class="planning-header__eyebrow">Backlog &amp; Tasks</p>
+      <h1>Deliverables</h1>
+      <p>All deliverables across teams. Items without a cycle are in the backlog.</p>
+    </div>
+    <%= link_to "New Deliverable", new_planning_deliverable_path, class: "planning-btn planning-btn--primary" %>
+  </header>
+
+  <section class="planning-filters">
+    <%= form_with url: planning_deliverables_path, method: :get, local: true, class: "planning-filters__form" do %>
+      <div class="planning-filters__field">
+        <label for="status">Status</label>
+        <select name="status" id="status">
+          <option value="">All</option>
+          <% Deliverable::STATUSES.each do |s| %>
+            <option value="<%= s %>" <%= "selected" if params[:status] == s %>><%= s.titleize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <div class="planning-filters__field">
+        <label for="stack">Stack</label>
+        <select name="stack" id="stack">
+          <option value="">All</option>
+          <% Deliverable::SPECIFIC_STACKS.each do |s| %>
+            <option value="<%= s %>" <%= "selected" if params[:stack] == s %>><%= s.titleize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <button type="submit" class="planning-btn planning-btn--small">Filter</button>
+    <% end %>
+  </section>
+
+  <section class="planning-table-wrap">
+    <table class="planning-table">
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Team</th>
+          <th>Cycle</th>
+          <th>Stack</th>
+          <th>Effort (h)</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @deliverables.each do |deliverable| %>
+          <tr>
+            <td data-label="Priority"><%= deliverable.priority %></td>
+            <td data-label="Title">
+              <strong><%= deliverable.title %></strong>
+              <% if deliverable.jira_link.present? %>
+                <br><a href="<%= deliverable.jira_link %>" target="_blank" rel="noopener" class="planning-link--external">Jira ↗</a>
+              <% end %>
+            </td>
+            <td data-label="Type">
+              <span class="planning-badge planning-badge--<%= deliverable.deliverable_type == 'spillover' ? 'warning' : 'info' %>">
+                <%= deliverable.deliverable_type.titleize %>
+              </span>
+            </td>
+            <td data-label="Team"><%= deliverable.team.name %></td>
+            <td data-label="Cycle">
+              <% if deliverable.cycle %>
+                <%= deliverable.cycle.name %>
+              <% else %>
+                <span class="planning-badge planning-badge--warning">Backlog</span>
+              <% end %>
+            </td>
+            <td data-label="Stack"><span class="planning-badge planning-badge--neutral"><%= deliverable.specific_stack.titleize %></span></td>
+            <td data-label="Effort"><%= deliverable.total_effort_hours %></td>
+            <td data-label="Status">
+              <span class="planning-badge planning-badge--<%= deliverable.status == 'done' ? 'success' : 'info' %>">
+                <%= deliverable.status.titleize %>
+              </span>
+            </td>
+            <td><%= link_to "Edit", edit_planning_deliverable_path(deliverable), class: "planning-link" %></td>
+          </tr>
+        <% end %>
+        <% if @deliverables.empty? %>
+          <tr>
+            <td colspan="9" class="planning-table__empty">No deliverables found.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+</div>

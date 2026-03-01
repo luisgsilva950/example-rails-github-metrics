@@ -1,0 +1,67 @@
+<%= form_with(model: deliverable, url: url, method: method, class: "planning-form") do |f| %>
+  <% if deliverable.errors.any? %>
+    <div class="planning-form__errors">
+      <p><strong><%= pluralize(deliverable.errors.count, "error") %> prevented this deliverable from being saved:</strong></p>
+      <ul>
+        <% deliverable.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="planning-form__field">
+    <%= f.label :title, "Title" %>
+    <%= f.text_field :title, placeholder: "e.g. Implement user authentication", autofocus: true %>
+  </div>
+
+  <div class="planning-form__row">
+    <div class="planning-form__field">
+      <%= f.label :team_id, "Team" %>
+      <%= f.collection_select :team_id, teams, :id, :name, { prompt: "Select a team" } %>
+    </div>
+
+    <div class="planning-form__field">
+      <%= f.label :cycle_id, "Cycle (optional)" %>
+      <%= f.collection_select :cycle_id, cycles, :id, :name, { include_blank: "Backlog (no cycle)" } %>
+    </div>
+  </div>
+
+  <div class="planning-form__row">
+    <div class="planning-form__field">
+      <%= f.label :specific_stack, "Stack" %>
+      <%= f.select :specific_stack, Deliverable::SPECIFIC_STACKS.map { |s| [s.titleize, s] }, { prompt: "Select stack" } %>
+    </div>
+
+    <div class="planning-form__field">
+      <%= f.label :status, "Status" %>
+      <%= f.select :status, Deliverable::STATUSES.map { |s| [s.titleize, s] } %>
+    </div>
+
+    <div class="planning-form__field">
+      <%= f.label :deliverable_type, "Type" %>
+      <%= f.select :deliverable_type, Deliverable::DELIVERABLE_TYPES.map { |t| [t.titleize, t] } %>
+    </div>
+  </div>
+
+  <div class="planning-form__row">
+    <div class="planning-form__field">
+      <%= f.label :total_effort_hours, "Estimated Effort (hours)" %>
+      <%= f.number_field :total_effort_hours, step: 0.5, min: 0, placeholder: "e.g. 16" %>
+    </div>
+
+    <div class="planning-form__field">
+      <%= f.label :priority, "Priority (lower = higher)" %>
+      <%= f.number_field :priority, min: 0, placeholder: "e.g. 1" %>
+    </div>
+  </div>
+
+  <div class="planning-form__field">
+    <%= f.label :jira_link, "Jira Link (optional)" %>
+    <%= f.url_field :jira_link, placeholder: "https://jira.example.com/browse/PROJ-123" %>
+  </div>
+
+  <div class="planning-form__actions">
+    <%= f.submit submit_label, class: "planning-btn planning-btn--primary" %>
+  </div>
+<% end %>

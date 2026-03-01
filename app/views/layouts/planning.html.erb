@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Capacity Planning" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body>
+    <nav class="planning-topbar">
+      <a href="<%= planning_teams_path %>" class="planning-topbar__brand">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
+        Capacity Planning
+      </a>
+      <span class="planning-topbar__sep"></span>
+      <div class="planning-topbar__nav">
+        <%= link_to "Teams", planning_teams_path, class: "planning-topbar__link #{'planning-topbar__link--active' if controller_name == 'teams'}" %>
+        <%= link_to "Developers", planning_developers_path, class: "planning-topbar__link #{'planning-topbar__link--active' if controller_name == 'developers'}" %>
+        <%= link_to "Cycles", planning_cycles_path, class: "planning-topbar__link #{'planning-topbar__link--active' if controller_name == 'cycles'}" %>
+        <%= link_to "Deliverables", planning_deliverables_path, class: "planning-topbar__link #{'planning-topbar__link--active' if controller_name == 'deliverables'}" %>
+      </div>
+    </nav>
+
+    <% if notice.present? || alert.present? %>
+      <div class="planning-toast-container">
+        <% if notice.present? %>
+          <div class="planning-toast planning-toast--success"
+               data-controller="toast"
+               data-action="click->toast#dismiss">
+            <%= notice %>
+          </div>
+        <% end %>
+        <% if alert.present? %>
+          <div class="planning-toast planning-toast--error"
+               data-controller="toast"
+               data-action="click->toast#dismiss">
+            <%= alert %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <main class="planning-main">
+      <%= yield %>
+    </main>
+  </body>
+</html>

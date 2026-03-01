@@ -1,0 +1,79 @@
+<% content_for(:title) { "Developers — Capacity Planning" } %>
+
+<div class="planning-layout">
+  <header class="planning-header">
+    <div>
+      <p class="planning-header__eyebrow">People</p>
+      <h1>Developers</h1>
+      <p>All developers available for capacity allocation.</p>
+    </div>
+    <%= link_to "New Developer", new_planning_developer_path, class: "planning-btn planning-btn--primary" %>
+  </header>
+
+  <section class="planning-filters">
+    <%= form_with url: planning_developers_path, method: :get, local: true, class: "planning-filters__form" do %>
+      <div class="planning-filters__field">
+        <label for="stack">Stack</label>
+        <select name="stack" id="stack">
+          <option value="">All</option>
+          <% Developer::DOMAIN_STACKS.each do |s| %>
+            <option value="<%= s %>" <%= "selected" if params[:stack] == s %>><%= s.titleize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <div class="planning-filters__field">
+        <label for="seniority">Seniority</label>
+        <select name="seniority" id="seniority">
+          <option value="">All</option>
+          <% Developer::SENIORITIES.each do |s| %>
+            <option value="<%= s %>" <%= "selected" if params[:seniority] == s %>><%= s.titleize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <button type="submit" class="planning-btn planning-btn--small">Filter</button>
+    <% end %>
+  </section>
+
+  <section class="planning-table-wrap">
+    <table class="planning-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Team</th>
+          <th>Stack</th>
+          <th>Seniority</th>
+          <th>Productivity</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @developers.each do |developer| %>
+          <tr>
+            <td data-label="Name"><strong><%= developer.name %></strong></td>
+            <td data-label="Team"><%= developer.team.name %></td>
+            <td data-label="Stack"><span class="planning-badge planning-badge--neutral"><%= developer.domain_stack.titleize %></span></td>
+            <td data-label="Seniority"><span class="planning-badge planning-badge--info"><%= developer.seniority.titleize %></span></td>
+            <td data-label="Productivity">
+              <% pct = (developer.productivity_factor * 100).round %>
+              <% level = pct >= 70 ? "high" : pct >= 40 ? "medium" : "low" %>
+              <div class="planning-productivity">
+                <div class="planning-productivity__bar">
+                  <div class="planning-productivity__fill planning-productivity__fill--<%= level %>" style="width: <%= pct %>%"></div>
+                </div>
+                <span class="planning-productivity__label planning-productivity__label--<%= level %>"><%= pct %>%</span>
+              </div>
+            </td>
+            <td><%= link_to "View", planning_developer_path(developer), class: "planning-link" %></td>
+          </tr>
+        <% end %>
+        <% if @developers.empty? %>
+          <tr>
+            <td colspan="6" class="planning-table__empty">No developers registered yet.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+</div>

@@ -1,0 +1,337 @@
+<% content_for(:title) { "Metrics Dashboard" } %>
+
+<style>
+  .dashboard {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+  }
+  .dashboard__hero {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .dashboard__hero h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    color: #0f172a;
+  }
+  .dashboard__hero p {
+    color: #64748b;
+    font-size: 1.05rem;
+    margin: 0;
+  }
+  .dashboard__section {
+    margin-bottom: 2.5rem;
+  }
+  .dashboard__section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .dashboard__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+  .dashboard__card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.12s;
+  }
+  .dashboard__card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 4px 16px rgba(59,130,246,0.10);
+    transform: translateY(-2px);
+  }
+  .dashboard__card-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dashboard__card-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .dashboard__card-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .dashboard__card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    color: #0f172a;
+  }
+  .dashboard__card-desc {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+  }
+  .dashboard__card-arrow {
+    flex-shrink: 0;
+    color: #cbd5e1;
+    align-self: center;
+    transition: color 0.15s;
+  }
+  .dashboard__card:hover .dashboard__card-arrow { color: #3b82f6; }
+
+  /* Sync toggle */
+  .sync-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #93c5fd;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.10);
+  }
+  .sync-toggle__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e40af;
+  }
+  .sync-toggle__meta {
+    font-size: 0.75rem;
+    color: #3b82f6;
+    font-weight: 500;
+    margin-left: auto;
+    text-align: right;
+  }
+  .sync-toggle__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+  .sync-toggle__status--idle {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+  .sync-toggle__status--syncing {
+    background: #dbeafe;
+    color: #2563eb;
+    animation: pulse-status 1.5s ease-in-out infinite;
+  }
+  .sync-toggle__status--completed {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  .sync-toggle__status--failed {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  @keyframes pulse-status {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .sync-toggle__error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: #991b1b;
+    line-height: 1.4;
+  }
+  .sync-toggle__error-icon {
+    flex-shrink: 0;
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .sync-toggle__switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  .sync-toggle__switch input { opacity: 0; width: 0; height: 0; }
+  .sync-toggle__slider {
+    position: absolute;
+    inset: 0;
+    background: #6b7280;
+    border-radius: 28px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .sync-toggle__slider::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    transition: transform 0.2s;
+  }
+  .sync-toggle__switch input:checked + .sync-toggle__slider {
+    background: #16a34a;
+  }
+  .sync-toggle__switch input:checked + .sync-toggle__slider::before {
+    transform: translateX(24px) translateY(-50%);
+  }
+
+  /* Icon backgrounds */
+  .bg-blue   { background: #dbeafe; }
+  .bg-green  { background: #dcfce7; }
+  .bg-amber  { background: #fef3c7; }
+  .bg-violet { background: #ede9fe; }
+</style>
+
+<div class="dashboard">
+  <div class="dashboard__hero">
+    <h1>Metrics Dashboard</h1>
+    <p>Select a section below to explore available reports and tools.</p>
+  </div>
+
+  <!-- JIRA Bugs Section -->
+  <div class="dashboard__section">
+    <h2 class="dashboard__section-title">JIRA Bugs</h2>
+
+    <div class="sync-toggle">
+      <div class="sync-toggle__label">Auto-sync from JIRA (every 5 min)</div>
+      <%= form_with url: metrics_sync_settings_toggle_path, method: :post, local: true, style: "display:contents" do %>
+        <%= hidden_field_tag :key, "jira_bugs" %>
+        <label class="sync-toggle__switch">
+          <input type="checkbox" <%= "checked" if @jira_sync.enabled? %> onchange="this.form.requestSubmit()">
+          <span class="sync-toggle__slider"></span>
+        </label>
+      <% end %>
+      <span class="sync-toggle__meta">
+        <span class="sync-toggle__status sync-toggle__status--<%= @jira_sync.status %>">
+          <% case @jira_sync.status %>
+          <% when "syncing" %>
+            &#8635; Syncing…
+          <% when "completed" %>
+            &#10003; Completed
+          <% when "failed" %>
+            &#10007; Failed
+          <% else %>
+            &#9679; Idle
+          <% end %>
+        </span>
+        <br>
+        <% if @jira_sync.last_synced_at %>
+          Last sync: <%= time_ago_in_words(@jira_sync.last_synced_at) %> ago
+        <% else %>
+          Never synced
+        <% end %>
+      </span>
+    </div>
+
+    <% if @jira_sync.failed? && @jira_sync.last_error.present? %>
+      <div class="sync-toggle__error">
+        <span class="sync-toggle__error-icon">&#9888;</span>
+        <span><strong>Sync error:</strong> <%= @jira_sync.last_error %></span>
+      </div>
+    <% end %>
+
+    <div class="dashboard__grid">
+
+      <a href="<%= metrics_jira_bugs_bubble_chart_page_path %>" class="dashboard__card">
+        <div class="dashboard__card-icon bg-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 17V13"/><path d="M12 17V9"/><path d="M17 17V5"/>
+          </svg>
+        </div>
+        <div class="dashboard__card-body">
+          <p class="dashboard__card-title">Category Chart</p>
+          <p class="dashboard__card-desc">Bar chart of "Done" bugs grouped by category prefix (feature, project, MFE, dev type).</p>
+        </div>
+        <span class="dashboard__card-arrow">&#8250;</span>
+      </a>
+
+      <a href="<%= metrics_jira_bugs_all_path %>" class="dashboard__card">
+        <div class="dashboard__card-icon bg-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>
+          </svg>
+        </div>
+        <div class="dashboard__card-body">
+          <p class="dashboard__card-title">All Bugs</p>
+          <p class="dashboard__card-desc">Full listing of all "Done" bugs with categories, dev type, components, and dates.</p>
+        </div>
+        <span class="dashboard__card-arrow">&#8250;</span>
+      </a>
+
+      <a href="<%= metrics_jira_bugs_over_time_path %>" class="dashboard__card">
+        <div class="dashboard__card-icon bg-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="dashboard__card-body">
+          <p class="dashboard__card-title">Bugs Over Time</p>
+          <p class="dashboard__card-desc">Trend chart of bugs over time grouped by day, week, or month with category filters.</p>
+        </div>
+        <span class="dashboard__card-arrow">&#8250;</span>
+      </a>
+
+      <a href="<%= metrics_jira_bugs_invalid_categories_page_path %>" class="dashboard__card">
+        <div class="dashboard__card-icon bg-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="dashboard__card-body">
+          <p class="dashboard__card-title">Invalid Categories</p>
+          <p class="dashboard__card-desc">Bugs missing required category labels, with JIRA sync option.</p>
+        </div>
+        <span class="dashboard__card-arrow">&#8250;</span>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- Authors Section -->
+  <div class="dashboard__section">
+    <h2 class="dashboard__section-title">Git Commits</h2>
+    <div class="dashboard__grid">
+
+      <a href="<%= metrics_authors_path %>" class="dashboard__card">
+        <div class="dashboard__card-icon bg-violet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div class="dashboard__card-body">
+          <p class="dashboard__card-title">Authors Ranking</p>
+          <p class="dashboard__card-desc">Ranking of authors by number of commits with per-repository breakdown (API).</p>
+        </div>
+        <span class="dashboard__card-arrow">&#8250;</span>
+      </a>
+
+    </div>
+  </div>
+</div>
