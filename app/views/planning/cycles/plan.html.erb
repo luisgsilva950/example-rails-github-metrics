@@ -133,18 +133,19 @@
         </div>
       </div>
       <div class="gantt-wrap"
-           data-controller="gantt-drag gantt-click"
+           data-controller="gantt-drag gantt-click gantt-op-labels"
            data-gantt-drag-cycle-id-value="<%= @cycle.id %>"
            data-gantt-drag-cycle-start-value="<%= @cycle.start_date %>"
            data-gantt-drag-cycle-end-value="<%= @cycle.end_date %>"
            data-gantt-click-cycle-id-value="<%= @cycle.id %>"
+           data-gantt-click-entries-url-value="<%= planning_cycle_burndown_entries_path(@cycle) %>"
            data-gantt-click-deliverables-value="<%= @deliverables.map { |d| { id: d.id, title: d.title, color: deliverable_colors[d.id] } }.to_json %>">
         <table class="gantt">
           <thead>
             <tr>
               <th class="gantt__label-col">Developer</th>
               <% work_days.each do |day| %>
-                <th class="gantt__day-col<%= ' gantt__day-col--today' if day == Date.current %><%= ' gantt__day-col--holiday' if @holiday_dates.include?(day) %>">
+                <th class="gantt__day-col<%= ' gantt__day-col--today' if day == Date.current %><%= ' gantt__day-col--holiday' if @holiday_dates.include?(day) %><%= ' gantt__day-col--week-start' if day.monday? %>">
                   <span class="gantt__day-name"><%= day.strftime("%a") %></span>
                   <span class="gantt__day-date"><%= day.strftime("%d/%m") %></span>
                 </th>
@@ -160,7 +161,6 @@
                    .order(:start_date) %>
               <% dev_absences = @developer_absences[cap.developer_id] || [] %>
               <% dev_ops = @developer_operational_map[cap.developer_id] || [] %>
-              <% op_skip_days = Set.new %>
               <tr data-developer-id="<%= cap.developer_id %>">
                 <td class="gantt__label-cell">
                   <button type="button" class="gantt__dev-btn"
@@ -171,33 +171,28 @@
                   </button>
                 </td>
                 <% work_days.each do |day| %>
-                  <% next if op_skip_days.include?(day) %>
                   <% if @holiday_dates.include?(day) %>
-                    <td class="gantt__cell gantt__cell--holiday" data-day="<%= day.to_s %>">
+                    <td class="gantt__cell gantt__cell--holiday<%= ' gantt__cell--week-start' if day.monday? %>" data-day="<%= day.to_s %>">
                       <span class="gantt__bar-label gantt__bar-label--holiday">Holiday</span>
                     </td>
                   <% else %>
                   <% absent_today = dev_absences.any? { |a| day >= a.start_date && day <= a.end_date } %>
                   <% if absent_today %>
-                    <td class="gantt__cell gantt__cell--absence" data-day="<%= day.to_s %>">
+                    <td class="gantt__cell gantt__cell--absence<%= ' gantt__cell--week-start' if day.monday? %>" data-day="<%= day.to_s %>">
                       <span class="gantt__bar-label gantt__bar-label--absence">Absent</span>
                     </td>
                   <% else %>
                     <% op_match = dev_ops.find { |a| day >= a.start_date && day <= a.end_date } %>
                     <% if op_match %>
-                    <% op_span = 1 %>
-                    <% day_idx = work_days.index(day) %>
-                    <% while (nxt_idx = day_idx + op_span) < work_days.size
-                         nxt = work_days[nxt_idx]
-                         break if @holiday_dates.include?(nxt)
-                         break if dev_absences.any? { |a| nxt >= a.start_date && nxt <= a.end_date }
-                         nxt_op = dev_ops.find { |a| nxt >= a.start_date && nxt <= a.end_date }
-                         break unless nxt_op && nxt_op.id == op_match.id
-                         op_skip_days << nxt
-                         op_span += 1
-                       end %>
-                    <td class="gantt__cell gantt__cell--operational" data-day="<%= day.to_s %>"<%= " colspan=#{op_span}" if op_span > 1 %> style="background: repeating-linear-gradient(45deg, <%= op_match.color %>22, <%= op_match.color %>22 4px, <%= op_match.color %>11 4px, <%= op_match.color %>11 8px);">
-                      <span class="gantt__bar-label" style="color: <%= op_match.color %>; font-weight: 600;"><%= op_match.name&.humanize %></span>
+                    <% has_op_unforeseen = @burndown_entries_set["#{cap.developer_id}-#{day}"] %>
+                    <% op_day_idx = work_days.index(day) %>
+                    <% prev_work_day = op_day_idx && op_day_idx > 0 ? work_days[op_day_idx - 1] : nil %>
+                    <% prev_same_op = prev_work_day&.between?(op_match.start_date, op_match.end_date) && !@holiday_dates.include?(prev_work_day) && !dev_absences.any? { |a| prev_work_day.between?(a.start_date, a.end_date) } %>
+                    <% op_is_first = !prev_same_op %>
+                    <td class="gantt__cell gantt__cell--operational<%= ' gantt__cell--op-first' if op_is_first %><%= ' gantt__cell--week-start' if day.monday? %><%= ' gantt__cell--unforeseen' if has_op_unforeseen %>" data-day="<%= day.to_s %>" data-developer-id="<%= cap.developer_id %>" data-action="click->gantt-click#operationalCellClicked"<% if op_is_first %> data-op-label="<%= op_match.name&.humanize %>" data-op-color="<%= op_match.color %>"<% end %><% if has_op_unforeseen %> data-unforeseen-id="<%= has_op_unforeseen.id %>" data-unforeseen-note="<%= has_op_unforeseen.note %>" data-unforeseen-hours="<%= has_op_unforeseen.hours_burned %>"<% end %> style="background: repeating-linear-gradient(45deg, <%= op_match.color %>22, <%= op_match.color %>22 4px, <%= op_match.color %>11 4px, <%= op_match.color %>11 8px); cursor: pointer;">
+                      <% if has_op_unforeseen %>
+                        <span class="gantt__unforeseen-badge" title="<%= has_op_unforeseen.note %>">⚠</span>
+                      <% end %>
                     </td>
                   <% else %>
                     <% matching = dev_allocs.select { |a| day >= a.start_date && day <= a.end_date } %>
@@ -215,7 +210,9 @@
                       <% next_is_alloc = next_day && matching.any? { |a| next_day >= a.start_date && next_day <= a.end_date } && !next_is_op && !@holiday_dates.include?(next_day) && !dev_absences.any? { |a| next_day >= a.start_date && next_day <= a.end_date } %>
                       <% visual_start = !prev_is_alloc %>
                       <% visual_end = !next_is_alloc %>
-                      <td class="gantt__cell gantt__cell--filled gantt__cell--has-tooltip<%= ' gantt__cell--alloc-start' if visual_start %><%= ' gantt__cell--alloc-end' if visual_end %>" data-tooltip="<%= alloc.deliverable.title %> · <%= alloc.start_date.strftime('%d/%m') %> – <%= alloc.end_date.strftime('%d/%m') %>" data-day="<%= day.to_s %>" data-allocation-id="<%= alloc.id %>" data-alloc-start="<%= alloc.start_date %>" data-alloc-end="<%= alloc.end_date %>" data-action="mousedown->gantt-drag#startDrag" style="background: <%= deliverable_colors[alloc.deliverable_id] %>30; border-left: <%= visual_start ? "3px solid #{deliverable_colors[alloc.deliverable_id]}" : 'none' %>; border-right: <%= visual_end ? "3px solid #{deliverable_colors[alloc.deliverable_id]}" : 'none' %>;">
+                      <% has_unforeseen = @burndown_entries_set["#{alloc.deliverable_id}-#{day}"] %>
+                      <td class="gantt__cell gantt__cell--filled gantt__cell--has-tooltip<%= ' gantt__cell--alloc-start' if visual_start %><%= ' gantt__cell--alloc-end' if visual_end %><%= ' gantt__cell--week-start' if day.monday? %><%= ' gantt__cell--unforeseen' if has_unforeseen %>" data-tooltip="<%= alloc.deliverable.title %> · <%= alloc.start_date.strftime('%d/%m') %> – <%= alloc.end_date.strftime('%d/%m') %><%= " ⚠ #{has_unforeseen.note}" if has_unforeseen %>" data-day="<%= day.to_s %>" data-allocation-id="<%= alloc.id %>" data-alloc-start="<%= alloc.start_date %>" data-alloc-end="<%= alloc.end_date %>" data-deliverable-id="<%= alloc.deliverable_id %>"
+<% if has_unforeseen %> data-unforeseen-id="<%= has_unforeseen.id %>" data-unforeseen-note="<%= has_unforeseen.note %>" data-unforeseen-hours="<%= has_unforeseen.hours_burned %>"<% end %> data-action="mousedown->gantt-drag#startDrag click->gantt-click#filledCellClicked" style="background: <%= deliverable_colors[alloc.deliverable_id] %>30; border-left: <%= visual_start ? "3px solid #{deliverable_colors[alloc.deliverable_id]}" : 'none' %>; border-right: <%= visual_end ? "3px solid #{deliverable_colors[alloc.deliverable_id]}" : 'none' %>;">
                         <% if visual_start %>
                           <span class="gantt__resize-handle gantt__resize-handle--left" data-edge="start"></span>
                         <% end %>
@@ -224,12 +221,15 @@
                             <%= alloc.deliverable.title.truncate(10) %>
                           </span>
                         <% end %>
+                        <% if has_unforeseen %>
+                          <span class="gantt__unforeseen-badge" title="<%= has_unforeseen.note %>">⚠</span>
+                        <% end %>
                         <% if visual_end %>
                           <span class="gantt__resize-handle gantt__resize-handle--right" data-edge="end"></span>
                         <% end %>
                       </td>
                     <% else %>
-                      <td class="gantt__cell gantt__cell--empty" data-day="<%= day.to_s %>" data-action="click->gantt-click#cellClicked"></td>
+                      <td class="gantt__cell gantt__cell--empty<%= ' gantt__cell--week-start' if day.monday? %>" data-day="<%= day.to_s %>" data-action="click->gantt-click#cellClicked"></td>
                     <% end %>
                   <% end %>
                   <% end %>
@@ -247,7 +247,7 @@
           <span class="gantt__legend-swatch gantt__legend-swatch--holiday"></span>
           <span class="gantt__legend-text">Holiday</span>
         </div>
-        <% @operational_activities.each do |activity| %>
+        <% @operational_activities.uniq(&:name).each do |activity| %>
           <div class="gantt__legend-item">
             <span class="gantt__legend-swatch" style="background: <%= activity.color %>;"></span>
             <span class="gantt__legend-text"><%= activity.name&.humanize %></span>
@@ -264,6 +264,10 @@
             <span class="gantt__legend-text"><%= del.title %></span>
           </div>
         <% end %>
+        <div class="gantt__legend-item">
+          <span class="gantt__legend-swatch gantt__legend-swatch--unforeseen"></span>
+          <span class="gantt__legend-text">Unforeseen Event</span>
+        </div>
       </div>
     </div>
   <% else %>
@@ -271,6 +275,24 @@
       <p>Add developers to this cycle to see the Gantt chart.</p>
       <button type="button" class="pln-action-btn pln-action-btn--accent" data-action="click->slideout#open" data-slideout-key-param="roster" data-slideout-title-param="Team Roster">Add Developers</button>
     </div>
+  <% end %>
+
+  <%# ═══════════════════════════════════════ %>
+  <%# ── Burndown Charts ───────────────── %>
+  <%# ═══════════════════════════════════════ %>
+  <% if @deliverables.any? %>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+    <section class="burndown" data-controller="burndown-chart" data-burndown-chart-url-value="<%= burndown_planning_cycle_path(@cycle, format: :json) %>">
+      <h2 class="burndown__title">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: -3px; margin-right: 6px; opacity: .7">
+          <path d="M1 1v14h14V1H1zm1 1h12v4.28l-3.56-1.78a.5.5 0 00-.54.07L7 7.28 4.56 5.06a.5.5 0 00-.56 0L2 6.28V2zm0 5.72l2.24-1.34 2.44 2.22a.5.5 0 00.64.02L10 6.28l4 2V14H2V7.72z"/>
+        </svg>
+        Burndown Charts
+      </h2>
+      <div class="burndown__grid" data-burndown-chart-target="container">
+        <p class="burndown__loading">Loading burndown data…</p>
+      </div>
+    </section>
   <% end %>
 
   <%# ═══════════════════════════════════════ %>

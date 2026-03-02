@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_28_210250) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_02_171241) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -23,6 +23,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_210250) do
     t.date "start_date", null: false
     t.datetime "updated_at", null: false
     t.index ["developer_id"], name: "index_absences_on_developer_id"
+  end
+
+  create_table "burndown_entries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "cycle_id"
+    t.date "date", null: false
+    t.uuid "deliverable_id"
+    t.uuid "developer_id"
+    t.float "hours_burned", default: 0.0, null: false
+    t.string "note"
+    t.datetime "updated_at", null: false
+    t.index ["cycle_id"], name: "index_burndown_entries_on_cycle_id"
+    t.index ["deliverable_id", "date"], name: "idx_burndown_entries_deliverable_date", unique: true, where: "(deliverable_id IS NOT NULL)"
+    t.index ["deliverable_id"], name: "index_burndown_entries_on_deliverable_id"
+    t.index ["developer_id", "cycle_id", "date"], name: "idx_burndown_entries_developer_cycle_date", unique: true, where: "((developer_id IS NOT NULL) AND (cycle_id IS NOT NULL))"
+    t.index ["developer_id"], name: "index_burndown_entries_on_developer_id"
   end
 
   create_table "commits", force: :cascade do |t|
@@ -160,7 +176,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_210250) do
     t.index ["priority"], name: "index_jira_bugs_on_priority"
     t.index ["status"], name: "index_jira_bugs_on_status"
     t.index ["team"], name: "index_jira_bugs_on_team"
-    t.check_constraint "development_type IS NULL OR (development_type::text = ANY (ARRAY['Backend'::character varying::text, 'Frontend'::character varying::text]))", name: "chk_jira_bugs_development_type"
+    t.check_constraint "development_type IS NULL OR (development_type::text = ANY (ARRAY['Backend'::character varying, 'Frontend'::character varying]::text[]))", name: "chk_jira_bugs_development_type"
   end
 
   create_table "pull_requests", force: :cascade do |t|
@@ -217,6 +233,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_210250) do
   end
 
   add_foreign_key "absences", "developers"
+  add_foreign_key "burndown_entries", "cycles"
+  add_foreign_key "burndown_entries", "deliverables"
+  add_foreign_key "burndown_entries", "developers"
   add_foreign_key "commits", "repositories"
   add_foreign_key "cycle_operational_activities", "cycles"
   add_foreign_key "cycle_operational_activities", "developers"

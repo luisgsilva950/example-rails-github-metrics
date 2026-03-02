@@ -40,6 +40,7 @@ Rails.application.routes.draw do
     resources :cycles, only: %i[index new create edit update] do
       member do
         get :plan
+        get :burndown
       end
       resources :cycle_capacities, only: %i[create destroy] do
         collection do
@@ -48,6 +49,7 @@ Rails.application.routes.draw do
       end
       resources :cycle_allocations, only: %i[create update destroy]
       resources :cycle_operational_activities, only: %i[create destroy]
+      resources :burndown_entries, only: %i[create update destroy]
     end
     resources :deliverables, only: %i[index new create edit update]
     resources :developers, only: %i[index new create show edit update] do

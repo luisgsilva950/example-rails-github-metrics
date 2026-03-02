@@ -2519,10 +2519,28 @@ button, .btn {
 	border-radius: 8px;
 	background: var(--bg-surface);
 	overflow-x: auto;
+	position: relative;
+}
+
+/* Floating operational activity labels (positioned via JS) */
+.gantt__op-label-overlay {
+	position: absolute;
+	transform: translateY(-50%);
+	font-size: 0.6rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	pointer-events: none;
+	z-index: 6;
+	line-height: 1;
 }
 
 .plan-dark .gantt {
-	border-collapse: collapse;
+	border-collapse: separate;
+	border-spacing: 0;
 	width: max-content;
 	font-size: 0.8rem;
 }
@@ -2535,7 +2553,8 @@ button, .btn {
 
 .plan-dark .gantt th,
 .plan-dark .gantt td {
-	border: 1px solid var(--border-muted);
+	border-right: 1px solid var(--border-muted);
+	border-bottom: 1px solid var(--border-muted);
 	padding: 0;
 	text-align: center;
 	vertical-align: middle;
@@ -2607,6 +2626,14 @@ button, .btn {
 	background: rgba(88, 166, 255, 0.1) !important;
 }
 
+.plan-dark .gantt__day-col--week-start {
+	border-left: 2px solid #484f58;
+}
+
+.plan-dark .gantt__cell--week-start {
+	border-left: 2px solid #484f58 !important;
+}
+
 .plan-dark .gantt__day-name {
 	display: block;
 	font-size: 0.65rem;
@@ -2627,12 +2654,17 @@ button, .btn {
 .plan-dark .gantt__cell {
 	position: relative;
 	background: var(--bg-surface);
-	overflow: hidden;
 }
 
 .plan-dark .gantt__cell--filled {
 	position: relative;
-	cursor: grab;
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.plan-dark .gantt__cell--filled:hover {
+	overflow: visible;
+	z-index: 10;
 }
 
 .plan-dark .gantt__cell--has-tooltip::after {
@@ -2678,6 +2710,7 @@ button, .btn {
 	opacity: 1;
 	background: rgba(255, 255, 255, 0.15);
 	border-radius: 2px;
+	cursor: col-resize;
 }
 
 .plan-dark .gantt__bar-label {
@@ -2738,10 +2771,20 @@ button, .btn {
 	position: relative;
 }
 
+.plan-dark .gantt__cell--operational.gantt__cell--op-first {
+	overflow: visible !important;
+	z-index: 5;
+}
+
 .plan-dark .gantt__cell--operational .gantt__bar-label {
 	font-size: 0.6rem;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
+	overflow: visible;
+	text-overflow: clip;
+	z-index: 3;
+	width: max-content;
+	right: auto;
 }
 
 /* Empty cells */
@@ -2844,6 +2887,68 @@ button, .btn {
 	opacity: 0.6;
 }
 
+.plan-dark .gantt__legend-swatch--unforeseen {
+	background: repeating-linear-gradient(
+		135deg,
+		rgba(255, 180, 60, 0.5) 0px,
+		rgba(255, 180, 60, 0.5) 3px,
+		transparent 3px,
+		transparent 6px
+	);
+	border: 1px solid rgba(255, 180, 60, 0.6);
+}
+
+/* ── Burndown Charts ── */
+.burndown {
+	margin: 2rem 1.5rem;
+}
+
+.burndown__title {
+	color: #c9d1d9;
+	font-size: 1.15rem;
+	font-weight: 600;
+	margin-bottom: 1rem;
+}
+
+.burndown__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+	gap: 1.25rem;
+}
+
+.burndown__card {
+	background: #161b22;
+	border: 1px solid #30363d;
+	border-radius: 10px;
+	padding: 1rem 1.25rem 0.75rem;
+}
+
+.burndown__card-title {
+	color: #c9d1d9;
+	font-size: 0.85rem;
+	font-weight: 600;
+	margin: 0 0 0.5rem;
+}
+
+.burndown__canvas-wrap {
+	position: relative;
+	height: 220px;
+}
+
+.burndown__loading {
+	color: #8b949e;
+	font-size: 0.85rem;
+	text-align: center;
+	padding: 2rem 0;
+}
+
+.burndown__empty {
+	color: #8b949e;
+	font-size: 0.85rem;
+	text-align: center;
+	padding: 2rem 0;
+}
+
 /* Gantt popover (dark) */
 .plan-dark .gantt-popover,
 .gantt-popover {
@@ -2911,6 +3016,153 @@ button, .btn {
 	font-size: 0.8rem;
 	color: var(--text-muted, #484f58);
 	text-align: center;
+}
+
+/* ── Unforeseen Event badge on Gantt cells ── */
+.gantt__cell--unforeseen {
+	position: relative;
+}
+
+.gantt__cell--unforeseen::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(
+		135deg,
+		rgba(255, 180, 60, 0.22) 0px,
+		rgba(255, 180, 60, 0.22) 3px,
+		transparent 3px,
+		transparent 6px
+	);
+	border-radius: 3px;
+	pointer-events: none;
+	z-index: 1;
+}
+
+.gantt__unforeseen-badge {
+	position: absolute;
+	top: 1px;
+	right: 2px;
+	font-size: 0.55rem;
+	line-height: 1;
+	z-index: 2;
+	pointer-events: none;
+}
+
+/* ── Unforeseen Event popover extras ── */
+.gantt-popover--unforeseen {
+	min-width: 210px;
+}
+
+.gantt-popover__icon {
+	margin-right: 6px;
+	font-size: 0.85rem;
+}
+
+.gantt-popover__form {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px 10px;
+}
+
+.gantt-popover__field-label {
+	font-size: 0.7rem;
+	color: var(--text-muted, #484f58);
+	margin-bottom: -2px;
+}
+
+.gantt-popover__input {
+	padding: 4px 6px;
+	border: 1px solid var(--border-color, #30363d);
+	border-radius: 4px;
+	background: var(--bg-surface, #161b22);
+	color: var(--text-primary, #c9d1d9);
+	font-size: 0.8rem;
+}
+
+.gantt-popover__input:focus {
+	outline: none;
+	border-color: #58a6ff;
+}
+
+.gantt-popover__save-btn {
+	margin-top: 4px;
+	padding: 5px 10px;
+	background: #f0883e;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-size: 0.78rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.gantt-popover__save-btn:hover {
+	background: #d47834;
+}
+
+/* Unforeseen Event detail view */
+.gantt-popover__detail {
+	padding: 8px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.gantt-popover__detail-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+}
+
+.gantt-popover__detail-label {
+	font-size: 0.7rem;
+	color: var(--text-muted, #484f58);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.gantt-popover__detail-value {
+	font-size: 0.8rem;
+	color: var(--text-primary, #c9d1d9);
+	font-weight: 600;
+}
+
+.gantt-popover__actions {
+	display: flex;
+	gap: 6px;
+	padding: 8px 12px;
+	border-top: 1px solid var(--border-color, #30363d);
+}
+
+.gantt-popover__action-btn {
+	flex: 1;
+	padding: 5px 10px;
+	border: none;
+	border-radius: 4px;
+	font-size: 0.78rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.gantt-popover__action-btn--edit {
+	background: #58a6ff;
+	color: #fff;
+}
+
+.gantt-popover__action-btn--edit:hover {
+	background: #4090e0;
+}
+
+.gantt-popover__action-btn--delete {
+	background: #f85149;
+	color: #fff;
+}
+
+.gantt-popover__action-btn--delete:hover {
+	background: #da3633;
 }
 
 /* ── Responsive ── */
@@ -3933,10 +4185,12 @@ button, .btn {
 	border: 1px solid var(--border);
 	border-radius: 8px;
 	background: var(--bg-surface);
+	position: relative;
 }
 
 .gantt {
-	border-collapse: collapse;
+	border-collapse: separate;
+	border-spacing: 0;
 	width: max-content;
 	min-width: 100%;
 	font-size: 0.8rem;
@@ -3950,7 +4204,8 @@ button, .btn {
 
 .gantt th,
 .gantt td {
-	border: 1px solid var(--border);
+	border-right: 1px solid var(--border);
+	border-bottom: 1px solid var(--border);
 	padding: 0;
 	text-align: center;
 	vertical-align: middle;
@@ -4057,7 +4312,7 @@ button, .btn {
 
 /* Drag-and-drop for Gantt allocations */
 .gantt__cell--filled {
-	cursor: grab;
+	cursor: pointer;
 }
 
 /* Resize handles on allocation edges */
@@ -4085,6 +4340,7 @@ button, .btn {
 	opacity: 1;
 	background: rgba(0, 0, 0, 0.15);
 	border-radius: 2px;
+	cursor: col-resize;
 }
 
 .gantt-dragging {
@@ -4275,10 +4531,20 @@ button, .btn {
 	position: relative;
 }
 
+.gantt__cell--operational.gantt__cell--op-first {
+	overflow: visible;
+	z-index: 5;
+}
+
 .gantt__cell--operational .gantt__bar-label {
 	font-size: 0.6rem;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
+	overflow: visible;
+	text-overflow: clip;
+	z-index: 3;
+	width: max-content;
+	right: auto;
 }
 
 .gantt__day-col--operational {
@@ -4358,6 +4624,17 @@ button, .btn {
 		rgba(210, 153, 34, 0.2) 6px
 	);
 	border: 1px solid rgba(210, 153, 34, 0.4);
+}
+
+.gantt__legend-swatch--unforeseen {
+	background: repeating-linear-gradient(
+		135deg,
+		rgba(255, 180, 60, 0.4) 0px,
+		rgba(255, 180, 60, 0.4) 3px,
+		transparent 3px,
+		transparent 6px
+	);
+	border: 1px solid rgba(255, 180, 60, 0.5);
 }
 
 .planning-detail-card--absence {
