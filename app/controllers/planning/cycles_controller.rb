@@ -37,6 +37,20 @@ module Planning
       load_plan_data
     end
 
+    def burndown
+      cycle = Cycle.find(params[:id])
+      deliverables = cycle.deliverables.includes(:deliverable_allocations, :burndown_entries)
+      holiday_dates = Holiday.dates_between(cycle.start_date, cycle.end_date)
+      builder = ::BuildBurndownData.new(query: ::BurndownQuery.new(holiday_dates: holiday_dates))
+
+      data = deliverables.map do |d|
+        result = builder.call(deliverable: d, cycle: cycle)
+        { id: d.id, title: d.title, effort: d.total_effort_hours, **result }
+      end
+
+      render json: data
+    end
+
     private
 
     def cycle_params
@@ -62,6 +76,7 @@ module Planning
                                      .includes(:developer)
                                      .ordered
       @developer_operational_map = build_developer_operational_map
+      @burndown_entries_set = build_burndown_entries_set
     end
 
     def fix_data_inconsistencies
@@ -129,6 +144,17 @@ module Planning
       developer_ids.each_with_object({}) do |dev_id, map|
         applicable = activities.select { |a| a.developer_id.nil? || a.developer_id == dev_id }
         map[dev_id] = applicable
+      end
+    end
+
+    def build_burndown_entries_set
+      deliverable_ids = @deliverables.map(&:id)
+      deliverable_entries = BurndownEntry.where(deliverable_id: deliverable_ids)
+      operational_entries = BurndownEntry.where(cycle: @cycle).where.not(developer_id: nil)
+
+      (deliverable_entries + operational_entries).each_with_object({}) do |entry, set|
+        key = entry.deliverable_id.present? ? "#{entry.deliverable_id}-#{entry.date}" : "#{entry.developer_id}-#{entry.date}"
+        set[key] = entry
       end
     end
   end

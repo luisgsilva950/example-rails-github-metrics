@@ -6,6 +6,7 @@ class Deliverable < ApplicationRecord
   belongs_to :team
   belongs_to :cycle, optional: true
   has_many :deliverable_allocations, dependent: :destroy
+  has_many :burndown_entries, dependent: :destroy
   has_many :developers, through: :deliverable_allocations
 
   validates :title, presence: true

@@ -33,17 +33,19 @@ export default class extends Controller {
     const cell = event.target.closest("td[data-allocation-id]")
     if (!cell) return
 
-    event.preventDefault()
-
     // Detect which edge was grabbed
     const handle = event.target.closest("[data-edge]")
     if (handle) {
       this.mode = handle.dataset.edge // "start" or "end"
+      // Only preventDefault for resize handles — they need to suppress click
+      event.preventDefault()
     } else {
       this.mode = "move"
+      // Don't preventDefault here — allow click events to fire for non-drag clicks
     }
 
     this.dragging = true
+    this.actualDragStarted = false
     this.lastOffset = null
     this.allocId = cell.dataset.allocationId
     this.origStart = cell.dataset.allocStart
@@ -54,15 +56,19 @@ export default class extends Controller {
     this.allocCells = [...this.row.querySelectorAll(`td[data-allocation-id="${this.allocId}"]`)]
     this.dayCells = [...this.row.querySelectorAll("td[data-day]")]
 
-    this.allocCells.forEach(c => c.classList.add("gantt__cell--dragging"))
-    document.body.classList.add("gantt-dragging")
-
     document.addEventListener("mousemove", this.boundMouseMove)
     document.addEventListener("mouseup", this.boundMouseUp)
   }
 
   onMouseMove(event) {
     if (!this.dragging) return
+
+    // Apply drag styling on first actual move
+    if (!this.actualDragStarted) {
+      this.actualDragStarted = true
+      this.allocCells.forEach(c => c.classList.add("gantt__cell--dragging"))
+      document.body.classList.add("gantt-dragging")
+    }
 
     const el = document.elementFromPoint(event.clientX, event.clientY)
     const hoverCell = el?.closest("td[data-day]")
