@@ -25,6 +25,8 @@ Rails.application.routes.draw do
     get "jira_bugs/all", to: "jira_bugs#all_bugs_page"
     get "jira_bugs/bugs_over_time", to: "jira_bugs#bugs_over_time_page", as: "jira_bugs_over_time"
     post "jira_bugs/sync_from_jira", to: "jira_bugs#sync_from_jira"
+    get "support_tickets", to: "support_tickets#index"
+    post "support_tickets/clone_to_bugs", to: "support_tickets#clone_to_bugs"
     post "sync_settings/toggle", to: "sync_settings#toggle"
   end
 

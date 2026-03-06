@@ -90,5 +90,9 @@
        class="jira-topbar__link<%= ' jira-topbar__link--active' if current_page?(metrics_jira_bugs_invalid_categories_page_path) %>">
       Invalid Categories
     </a>
+    <a href="<%= metrics_support_tickets_path(shared_params) %>"
+       class="jira-topbar__link<%= ' jira-topbar__link--active' if controller_name == 'support_tickets' %>">
+      Support Tickets
+    </a>
   </div>
 </nav>

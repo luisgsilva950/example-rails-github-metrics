@@ -314,6 +314,66 @@
     </div>
   </div>
 
+  <!-- Support Tickets Section -->
+  <div class="dashboard__section">
+    <h2 class="dashboard__section-title">Support Tickets</h2>
+
+    <div class="sync-toggle">
+      <div class="sync-toggle__label">Auto-sync from JIRA (every 5 min)</div>
+      <%= form_with url: metrics_sync_settings_toggle_path, method: :post, local: true, style: "display:contents" do %>
+        <%= hidden_field_tag :key, "support_tickets" %>
+        <label class="sync-toggle__switch">
+          <input type="checkbox" <%= "checked" if @support_tickets_sync.enabled? %> onchange="this.form.requestSubmit()">
+          <span class="sync-toggle__slider"></span>
+        </label>
+      <% end %>
+      <span class="sync-toggle__meta">
+        <span class="sync-toggle__status sync-toggle__status--<%= @support_tickets_sync.status %>">
+          <% case @support_tickets_sync.status %>
+          <% when "syncing" %>
+            &#8635; Syncing…
+          <% when "completed" %>
+            &#10003; Completed
+          <% when "failed" %>
+            &#10007; Failed
+          <% else %>
+            &#9679; Idle
+          <% end %>
+        </span>
+        <br>
+        <% if @support_tickets_sync.last_synced_at %>
+          Last sync: <%= time_ago_in_words(@support_tickets_sync.last_synced_at) %> ago
+        <% else %>
+          Never synced
+        <% end %>
+      </span>
+    </div>
+
+    <% if @support_tickets_sync.failed? && @support_tickets_sync.last_error.present? %>
+      <div class="sync-toggle__error">
+        <span class="sync-toggle__error-icon">&#9888;</span>
+        <span><strong>Sync error:</strong> <%= @support_tickets_sync.last_error %></span>
+      </div>
+    <% end %>
+
+    <div class="dashboard__grid">
+
+      <a href="<%= metrics_support_tickets_path %>" class="dashboard__card">
+        <div class="dashboard__card-icon bg-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><circle cx="9" cy="6" r="3"/><path d="M6 9a6 6 0 0 0 0 6"/><circle cx="9" cy="18" r="3"/><path d="M18 6h-3"/><path d="M18 12h-3"/><path d="M18 18h-3"/>
+          </svg>
+        </div>
+        <div class="dashboard__card-body">
+          <p class="dashboard__card-title">Support Tickets</p>
+          <p class="dashboard__card-desc">List of support tickets by team, ordered by most recent, with status and priority filters.</p>
+        </div>
+        <span class="dashboard__card-arrow">&#8250;</span>
+      </a>
+
+    </div>
+  </div>
+
   <!-- Authors Section -->
   <div class="dashboard__section">
     <h2 class="dashboard__section-title">Git Commits</h2>

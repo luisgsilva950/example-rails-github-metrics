@@ -48,5 +48,21 @@ RSpec.describe "Metrics::Dashboard", type: :request do
 
       expect(response.body).not_to include("Sync error:")
     end
+
+    it "shows support tickets sync toggle" do
+      get "/metrics/dashboard"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Support Tickets")
+      expect(response.body).to include("support_tickets")
+    end
+
+    it "shows support tickets sync completed status" do
+      create(:sync_setting, key: "support_tickets", status: "completed", last_synced_at: 2.minutes.ago)
+
+      get "/metrics/dashboard"
+
+      expect(response).to have_http_status(:ok)
+    end
   end
 end
