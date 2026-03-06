@@ -75,7 +75,7 @@ group :test do
 end
 
 
-gem "octokit", "~> 4.0"
+gem "octokit", "~> 10.0"
 gem "jira-ruby", require: false
 gem "certifi"
 gem "stringio"
