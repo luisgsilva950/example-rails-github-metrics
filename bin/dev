@@ -1,2 +1,14 @@
 #!/usr/bin/env ruby
+
+APP_ROOT = File.expand_path("..", __dir__)
+Dir.chdir(APP_ROOT)
+
+puts "== Preparing database =="
+system("bin/rails db:prepare", exception: true)
+
+ENV["SOLID_QUEUE_IN_PUMA"] = "1"
+ENV["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
+
+puts "\n== Starting Rails server with Solid Queue =="
+STDOUT.flush
 exec "./bin/rails", "server", *ARGV

@@ -120,4 +120,35 @@ RSpec.describe JiraClient do
       expect(result).to eq(issue)
     end
   end
+
+  describe "#create_issue" do
+    it "posts to JIRA and returns the issue key" do
+      response = double("Response", body: '{"id":"10000","key":"CWS-999","self":"https://jira.example.com/rest/api/2/issue/10000"}')
+      allow(jira_client_mock).to receive(:options).and_return(rest_base_path: "/rest/api/2")
+      allow(jira_client_mock).to receive(:post).and_return(response)
+
+      fields = { "project" => { "key" => "CWS" }, "issuetype" => { "name" => "Bug" }, "summary" => "Test" }
+      result = client.create_issue(fields: fields)
+
+      expect(jira_client_mock).to have_received(:post).with("/rest/api/2/issue", { "fields" => fields }.to_json)
+      expect(result).to eq("CWS-999")
+    end
+  end
+
+  describe "#link_issues" do
+    it "posts an issue link to JIRA" do
+      allow(jira_client_mock).to receive(:options).and_return(rest_base_path: "/rest/api/2")
+      allow(jira_client_mock).to receive(:post)
+
+      client.link_issues(inward_key: "CWS-100", outward_key: "CWS-200")
+
+      expected_body = {
+        "type" => { "name" => "Cloners" },
+        "inwardIssue" => { "key" => "CWS-100" },
+        "outwardIssue" => { "key" => "CWS-200" }
+      }.to_json
+
+      expect(jira_client_mock).to have_received(:post).with("/rest/api/2/issueLink", expected_body)
+    end
+  end
 end

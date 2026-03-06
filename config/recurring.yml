@@ -17,9 +17,17 @@ production:
     class: SyncJiraBugsJob
     queue: default
     schedule: every 5 minutes
+  sync_support_tickets:
+    class: SyncSupportTicketsJob
+    queue: default
+    schedule: every 5 minutes
 
 development:
   sync_jira_bugs:
     class: SyncJiraBugsJob
+    queue: default
+    schedule: every 5 minutes
+  sync_support_tickets:
+    class: SyncSupportTicketsJob
     queue: default
     schedule: every 5 minutes

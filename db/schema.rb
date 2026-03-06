@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_02_171241) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_04_145535) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -212,6 +212,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_171241) do
     t.datetime "updated_at", null: false
     t.index ["github_id"], name: "index_repositories_on_github_id", unique: true
     t.index ["name"], name: "index_repositories_on_name", unique: true
+  end
+
+  create_table "support_tickets", force: :cascade do |t|
+    t.string "assignee"
+    t.string "cloned_to_bug_key"
+    t.string "components", default: [], array: true
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "issue_key", null: false
+    t.datetime "jira_updated_at"
+    t.datetime "opened_at", null: false
+    t.string "priority"
+    t.string "reporter"
+    t.string "status"
+    t.string "team"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["issue_key"], name: "index_support_tickets_on_issue_key", unique: true
+    t.index ["jira_updated_at"], name: "index_support_tickets_on_jira_updated_at"
+    t.index ["opened_at"], name: "index_support_tickets_on_opened_at"
+    t.index ["priority"], name: "index_support_tickets_on_priority"
+    t.index ["status"], name: "index_support_tickets_on_status"
+    t.index ["team"], name: "index_support_tickets_on_team"
   end
 
   create_table "sync_settings", force: :cascade do |t|

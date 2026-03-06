@@ -44,5 +44,22 @@ RSpec.describe "Metrics::SyncSettings", type: :request do
       expect(response).to redirect_to(metrics_dashboard_path)
       expect(SyncSetting.find_by(key: "jira_bugs")).to be_enabled
     end
+
+    it "toggles support_tickets sync on" do
+      create(:sync_setting, key: "support_tickets", enabled: false)
+
+      post "/metrics/sync_settings/toggle", params: { key: "support_tickets" }
+
+      expect(response).to redirect_to(metrics_dashboard_path)
+      expect(SyncSetting.find_by(key: "support_tickets")).to be_enabled
+    end
+
+    it "enqueues support tickets sync job when enabling" do
+      create(:sync_setting, key: "support_tickets", enabled: false)
+
+      expect {
+        post "/metrics/sync_settings/toggle", params: { key: "support_tickets" }
+      }.to have_enqueued_job(SyncSupportTicketsJob)
+    end
   end
 end

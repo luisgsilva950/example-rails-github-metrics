@@ -55,6 +55,22 @@ class JiraClient
     nil
   end
 
+  def create_issue(fields:)
+    path = "#{@client.options[:rest_base_path]}/issue"
+    response = @client.post(path, { "fields" => fields }.to_json)
+    JSON.parse(response.body)["key"]
+  end
+
+  def link_issues(inward_key:, outward_key:, link_type: "Cloners")
+    path = "#{@client.options[:rest_base_path]}/issueLink"
+    body = {
+      "type" => { "name" => link_type },
+      "inwardIssue" => { "key" => inward_key },
+      "outwardIssue" => { "key" => outward_key }
+    }
+    @client.post(path, body.to_json)
+  end
+
   private
 
   def build_client
