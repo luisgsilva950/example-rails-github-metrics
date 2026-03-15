@@ -182,7 +182,7 @@ GEM
       cgi
       multipart-post
       oauth (~> 1.0)
-    json (2.18.1)
+    json (2.19.1)
     json-schema (6.1.0)
       addressable (~> 2.8)
       bigdecimal (>= 3.1, < 5)
@@ -355,14 +355,14 @@ GEM
     rspec-mocks (3.13.8)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
-    rspec-rails (7.1.1)
-      actionpack (>= 7.0)
-      activesupport (>= 7.0)
-      railties (>= 7.0)
-      rspec-core (~> 3.13)
-      rspec-expectations (~> 3.13)
-      rspec-mocks (~> 3.13)
-      rspec-support (~> 3.13)
+    rspec-rails (8.0.4)
+      actionpack (>= 7.2)
+      activesupport (>= 7.2)
+      railties (>= 7.2)
+      rspec-core (>= 3.13.0, < 5.0.0)
+      rspec-expectations (>= 3.13.0, < 5.0.0)
+      rspec-mocks (>= 3.13.0, < 5.0.0)
+      rspec-support (>= 3.13.0, < 5.0.0)
     rspec-support (3.13.7)
     rubocop (1.85.0)
       json (~> 2.3)
@@ -520,7 +520,7 @@ DEPENDENCIES
   rails (~> 8.1.1)
   rgeo
   rgeo-geojson
-  rspec-rails (~> 7.0)
+  rspec-rails (~> 8.0)
   rubocop-rails-omakase
   selenium-webdriver
   simplecov
