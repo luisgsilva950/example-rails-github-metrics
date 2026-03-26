@@ -43,6 +43,7 @@ Rails.application.routes.draw do
       member do
         get :plan
         get :burndown
+        post :sync_all_dates_to_jira
       end
       resources :cycle_capacities, only: %i[create destroy] do
         collection do
@@ -53,9 +54,23 @@ Rails.application.routes.draw do
       resources :cycle_operational_activities, only: %i[create destroy]
       resources :burndown_entries, only: %i[create update destroy]
     end
-    resources :deliverables, only: %i[index new create edit update]
+    resources :deliverables, only: %i[index new create edit update] do
+      member do
+        post :sync_dates_to_jira
+      end
+    end
     resources :developers, only: %i[index new create show edit update] do
       resources :absences, only: %i[create destroy]
+    end
+  end
+
+  namespace :sonar do
+    root to: "dashboard#index"
+    get "opened", to: "dashboard#opened"
+    resources :projects, only: [ :show ] do
+      member do
+        post :sync_issues
+      end
     end
   end
 end

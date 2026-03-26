@@ -1,0 +1,462 @@
+<% content_for(:title) { "Sonar Metrics" } %>
+
+<style>
+  .sonar-dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+  }
+  .sonar-dashboard__hero {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  /* Filter buttons */
+  .sonar-filter-btn {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .sonar-filter-btn:hover {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+  }
+  .sonar-filter-btn--active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+  }
+  .sonar-filter-btn--active:hover {
+    color: #fff;
+  }
+  .sonar-dashboard__hero h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+  }
+  .sonar-dashboard__hero p {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    margin: 0;
+  }
+
+  /* Summary cards */
+  .sonar-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .sonar-summary__card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    text-align: center;
+  }
+  .sonar-summary__card:hover {
+    border-color: var(--accent-blue);
+    box-shadow: 0 4px 16px rgba(88, 166, 255, 0.1);
+  }
+  .sonar-summary__value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+  }
+  .sonar-summary__label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 0;
+  }
+  .sonar-summary__value--blue { color: var(--accent-blue); }
+  .sonar-summary__value--red { color: var(--accent-red); }
+  .sonar-summary__value--orange { color: var(--accent-orange); }
+  .sonar-summary__value--green { color: var(--accent-green); }
+  .sonar-summary__value--purple { color: var(--accent-purple); }
+  .sonar-summary__value--cyan { color: var(--accent-cyan); }
+
+  /* Sync toggle */
+  .sync-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: rgba(88, 166, 255, 0.08);
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .sync-toggle__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-blue);
+  }
+  .sync-toggle__meta {
+    font-size: 0.75rem;
+    color: var(--accent-blue);
+    font-weight: 500;
+    margin-left: auto;
+    text-align: right;
+  }
+  .sync-toggle__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+  .sync-toggle__status--idle {
+    background: var(--bg-muted);
+    color: var(--text-secondary);
+  }
+  .sync-toggle__status--syncing {
+    background: rgba(88, 166, 255, 0.1);
+    color: var(--accent-blue);
+    animation: pulse-status 1.5s ease-in-out infinite;
+  }
+  .sync-toggle__status--completed {
+    background: rgba(63, 185, 80, 0.1);
+    color: var(--accent-green);
+  }
+  .sync-toggle__status--failed {
+    background: rgba(248, 81, 73, 0.1);
+    color: var(--accent-red);
+  }
+  @keyframes pulse-status {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .sync-toggle__error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(248, 81, 73, 0.1);
+    border: 1px solid rgba(248, 81, 73, 0.3);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: var(--accent-red);
+    line-height: 1.4;
+  }
+  .sync-toggle__error-icon {
+    flex-shrink: 0;
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .sync-toggle__switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  .sync-toggle__switch input { opacity: 0; width: 0; height: 0; }
+  .sync-toggle__slider {
+    position: absolute;
+    inset: 0;
+    background: var(--text-muted);
+    border-radius: 28px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .sync-toggle__slider::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--text-primary);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
+  }
+  .sync-toggle__switch input:checked + .sync-toggle__slider {
+    background: var(--accent-green);
+  }
+  .sync-toggle__switch input:checked + .sync-toggle__slider::before {
+    transform: translateX(24px) translateY(-50%);
+  }
+
+  /* Projects table */
+  .sonar-table-wrap {
+    overflow-x: auto;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+  }
+  .sonar-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .sonar-table th {
+    background: var(--bg-muted);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .sonar-table td {
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .sonar-table tr:last-child td { border-bottom: none; }
+  .sonar-table tr:hover td { background: var(--bg-overlay); }
+  .sonar-table a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .sonar-table a:hover { text-decoration: underline; }
+  .sonar-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Rating badges */
+  .sonar-rating {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.75rem;
+  }
+  .sonar-rating--a { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); }
+  .sonar-rating--b { background: rgba(63, 185, 80, 0.1); color: #7ee787; }
+  .sonar-rating--c { background: rgba(210, 153, 34, 0.15); color: var(--accent-orange); }
+  .sonar-rating--d { background: rgba(248, 81, 73, 0.1); color: #ffa198; }
+  .sonar-rating--e { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+
+  .sonar-empty {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+</style>
+
+<div class="sonar-dashboard">
+  <div class="sonar-dashboard__hero">
+    <h1>Sonar Metrics</h1>
+    <p>Code quality overview from SonarCloud for your organization.</p>
+  </div>
+
+  <!-- Sync toggle -->
+  <div class="sync-toggle">
+    <div class="sync-toggle__label">Auto-sync from SonarCloud (every 15 minutes)</div>
+    <%= form_with url: metrics_sync_settings_toggle_path, method: :post, local: true, style: "display:contents" do %>
+      <%= hidden_field_tag :key, "sonar_metrics" %>
+      <label class="sync-toggle__switch">
+        <input type="checkbox" <%= "checked" if @dashboard[:sync_setting].enabled? %> onchange="this.form.requestSubmit()">
+        <span class="sync-toggle__slider"></span>
+      </label>
+    <% end %>
+    <span class="sync-toggle__meta">
+      <span class="sync-toggle__status sync-toggle__status--<%= @dashboard[:sync_setting].status %>">
+        <% case @dashboard[:sync_setting].status %>
+        <% when "syncing" %>
+          &#8635; Syncing…
+        <% when "completed" %>
+          &#10003; Completed
+        <% when "failed" %>
+          &#10007; Failed
+        <% else %>
+          &#9679; Idle
+        <% end %>
+      </span>
+      <br>
+      <% if @dashboard[:sync_setting].last_synced_at %>
+        Last sync: <%= time_ago_in_words(@dashboard[:sync_setting].last_synced_at) %> ago
+      <% else %>
+        Never synced
+      <% end %>
+    </span>
+  </div>
+
+  <% if @dashboard[:sync_setting].failed? && @dashboard[:sync_setting].last_error.present? %>
+    <div class="sync-toggle__error">
+      <span class="sync-toggle__error-icon">&#9888;</span>
+      <span><strong>Sync error:</strong> <%= @dashboard[:sync_setting].last_error %></span>
+    </div>
+  <% end %>
+
+  <% if @dashboard[:projects].any? %>
+    <!-- Severity filter -->
+    <div style="display:flex; gap:0.5rem; margin-bottom:1.5rem;">
+      <%= link_to "All", sonar_root_path, class: "sonar-filter-btn #{@dashboard[:severity].blank? ? 'sonar-filter-btn--active' : ''}" %>
+      <%= link_to "Critical Only", sonar_root_path(severity: "CRITICAL"), class: "sonar-filter-btn #{@dashboard[:severity] == 'CRITICAL' ? 'sonar-filter-btn--active' : ''}" %>
+    </div>
+
+    <!-- Open vs Resolved -->
+    <div class="sonar-summary" style="margin-bottom: 1rem;">
+      <a href="<%= sonar_opened_path(severity: @dashboard[:severity].presence) %>" class="sonar-summary__card" style="text-decoration:none; color:inherit; cursor:pointer;">
+        <p class="sonar-summary__value sonar-summary__value--red"><%= @dashboard[:issue_stats][:open] %></p>
+        <p class="sonar-summary__label">Open<%= " (Critical/Blocker)" if @dashboard[:severity] == "CRITICAL" %></p>
+      </a>
+      <div class="sonar-summary__card">
+        <p class="sonar-summary__value sonar-summary__value--green"><%= @dashboard[:issue_stats][:resolved] %></p>
+        <p class="sonar-summary__label">Resolved<%= " (Critical/Blocker)" if @dashboard[:severity] == "CRITICAL" %></p>
+      </div>
+    </div>
+
+    <% if @dashboard[:severity] == "CRITICAL" %>
+      <% critical_issues = @dashboard[:critical_issues] %>
+      <!-- Summary cards (critical only, open) -->
+      <div class="sonar-summary">
+        <div class="sonar-summary__card">
+          <p class="sonar-summary__value sonar-summary__value--blue"><%= @dashboard[:projects].length %></p>
+          <p class="sonar-summary__label">Projects</p>
+        </div>
+        <div class="sonar-summary__card">
+          <p class="sonar-summary__value sonar-summary__value--red"><%= critical_issues.bugs.count %></p>
+          <p class="sonar-summary__label">Critical Bugs</p>
+        </div>
+        <div class="sonar-summary__card">
+          <p class="sonar-summary__value sonar-summary__value--orange"><%= critical_issues.vulnerabilities.count %></p>
+          <p class="sonar-summary__label">Critical Vulnerabilities</p>
+        </div>
+        <div class="sonar-summary__card">
+          <p class="sonar-summary__value sonar-summary__value--purple"><%= critical_issues.code_smells.count %></p>
+          <p class="sonar-summary__label">Critical Code Smells</p>
+        </div>
+        <div class="sonar-summary__card">
+          <p class="sonar-summary__value sonar-summary__value--cyan"><%= critical_issues.security_hotspots.count %></p>
+          <p class="sonar-summary__label">Critical Hotspots</p>
+        </div>
+      </div>
+
+      <!-- Projects table (critical counts) -->
+      <div class="sonar-table-wrap">
+        <table class="sonar-table">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Critical Bugs</th>
+              <th>Critical Vulns</th>
+              <th>Critical Smells</th>
+              <th>Critical Hotspots</th>
+              <th>Total Critical</th>
+              <th>Last Analysis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @dashboard[:projects].each do |project| %>
+              <% counts = @dashboard[:critical_counts] || {} %>
+              <% c_bugs = counts[[project.id, "BUG"]] || 0 %>
+              <% c_vulns = counts[[project.id, "VULNERABILITY"]] || 0 %>
+              <% c_smells = counts[[project.id, "CODE_SMELL"]] || 0 %>
+              <% c_hotspots = counts[[project.id, "SECURITY_HOTSPOT"]] || 0 %>
+              <tr>
+                <td><%= link_to project.name, sonar_project_path(project) %></td>
+                <td class="num"><%= c_bugs %></td>
+                <td class="num"><%= c_vulns %></td>
+                <td class="num"><%= c_smells %></td>
+                <td class="num"><%= c_hotspots %></td>
+                <td class="num"><strong><%= c_bugs + c_vulns + c_smells + c_hotspots %></strong></td>
+                <td><%= project.last_analysis_date&.strftime("%Y-%m-%d") || "—" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+    <!-- Summary cards -->
+    <div class="sonar-summary">
+      <div class="sonar-summary__card">
+        <p class="sonar-summary__value sonar-summary__value--blue"><%= @dashboard[:projects].size %></p>
+        <p class="sonar-summary__label">Projects</p>
+      </div>
+      <div class="sonar-summary__card">
+        <p class="sonar-summary__value sonar-summary__value--red"><%= @dashboard[:projects].sum(:bugs) %></p>
+        <p class="sonar-summary__label">Bugs</p>
+      </div>
+      <div class="sonar-summary__card">
+        <p class="sonar-summary__value sonar-summary__value--orange"><%= @dashboard[:projects].sum(:vulnerabilities) %></p>
+        <p class="sonar-summary__label">Vulnerabilities</p>
+      </div>
+      <div class="sonar-summary__card">
+        <p class="sonar-summary__value sonar-summary__value--purple"><%= @dashboard[:projects].sum(:code_smells) %></p>
+        <p class="sonar-summary__label">Code Smells</p>
+      </div>
+      <div class="sonar-summary__card">
+        <p class="sonar-summary__value sonar-summary__value--cyan"><%= @dashboard[:projects].sum(:security_hotspots) %></p>
+        <p class="sonar-summary__label">Hotspots</p>
+      </div>
+      <div class="sonar-summary__card">
+        <p class="sonar-summary__value sonar-summary__value--green"><%= number_with_precision(@dashboard[:projects].average(:coverage), precision: 1) %>%</p>
+        <p class="sonar-summary__label">Avg Coverage</p>
+      </div>
+    </div>
+
+    <!-- Projects table -->
+    <div class="sonar-table-wrap">
+      <table class="sonar-table">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Bugs</th>
+            <th>Vulnerabilities</th>
+            <th>Code Smells</th>
+            <th>Hotspots</th>
+            <th>Coverage</th>
+            <th>Duplications</th>
+            <th>Lines</th>
+            <th>Reliability</th>
+            <th>Security</th>
+            <th>Maintainability</th>
+            <th>Last Analysis</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @dashboard[:projects].each do |project| %>
+            <tr>
+              <td><%= link_to project.name, sonar_project_path(project) %></td>
+              <td class="num"><%= project.bugs %></td>
+              <td class="num"><%= project.vulnerabilities %></td>
+              <td class="num"><%= project.code_smells %></td>
+              <td class="num"><%= project.security_hotspots %></td>
+              <td class="num"><%= number_with_precision(project.coverage, precision: 1) %>%</td>
+              <td class="num"><%= number_with_precision(project.duplicated_lines_density, precision: 1) %>%</td>
+              <td class="num"><%= number_with_delimiter(project.ncloc) %></td>
+              <td><%= render_rating(project.reliability_rating) %></td>
+              <td><%= render_rating(project.security_rating) %></td>
+              <td><%= render_rating(project.sqale_rating) %></td>
+              <td><%= project.last_analysis_date&.strftime("%Y-%m-%d") || "—" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <% end %>
+  <% else %>
+    <div class="sonar-empty">
+      <p>No projects synced yet. Enable auto-sync above or wait for the next scheduled run.</p>
+    </div>
+  <% end %>
+</div>

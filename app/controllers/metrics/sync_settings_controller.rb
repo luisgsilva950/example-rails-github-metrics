@@ -3,7 +3,8 @@
 class Metrics::SyncSettingsController < ApplicationController
   SYNC_JOBS = {
     "jira_bugs" => SyncJiraBugsJob,
-    "support_tickets" => SyncSupportTicketsJob
+    "support_tickets" => SyncSupportTicketsJob,
+    "sonar_metrics" => SyncSonarMetricsJob
   }.freeze
 
   def toggle
@@ -12,7 +13,7 @@ class Metrics::SyncSettingsController < ApplicationController
 
     SYNC_JOBS[params[:key]]&.perform_later if setting.enabled?
 
-    redirect_to metrics_dashboard_path,
-                notice: "Sync #{setting.enabled? ? 'enabled' : 'disabled'}."
+    redirect_back fallback_location: metrics_dashboard_path,
+                  notice: "Sync #{setting.enabled? ? 'enabled' : 'disabled'}."
   end
 end

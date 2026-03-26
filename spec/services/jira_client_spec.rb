@@ -135,6 +135,21 @@ RSpec.describe JiraClient do
     end
   end
 
+  describe "#update_issue" do
+    it "puts updated fields to JIRA" do
+      allow(jira_client_mock).to receive(:options).and_return(rest_base_path: "/rest/api/2")
+      allow(jira_client_mock).to receive(:put)
+
+      fields = { "duedate" => "2025-01-10", "customfield_10015" => "2025-01-06" }
+      client.update_issue(key: "PROJ-123", fields: fields)
+
+      expect(jira_client_mock).to have_received(:put).with(
+        "/rest/api/2/issue/PROJ-123",
+        { "fields" => fields }.to_json
+      )
+    end
+  end
+
   describe "#link_issues" do
     it "posts an issue link to JIRA" do
       allow(jira_client_mock).to receive(:options).and_return(rest_base_path: "/rest/api/2")

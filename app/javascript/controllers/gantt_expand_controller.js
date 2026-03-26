@@ -22,19 +22,24 @@ export default class extends Controller {
 
   async download() {
     const { default: html2canvas } = await import("html2canvas")
-    const chartEl = this.element.querySelector(".gantt-wrap")
-    if (!chartEl) return
+    const captureEl = this.element.querySelector(".gantt-capture-area")
+    if (!captureEl) return
 
-    const canvas = await html2canvas(chartEl, {
+    const ganttWrap = captureEl.querySelector(".gantt-wrap")
+    if (ganttWrap) ganttWrap.style.overflow = "visible"
+
+    const canvas = await html2canvas(captureEl, {
       backgroundColor: "#0d1117",
       scale: 2,
       scrollX: 0,
       scrollY: 0,
-      width: chartEl.scrollWidth,
-      height: chartEl.scrollHeight,
-      windowWidth: chartEl.scrollWidth,
-      windowHeight: chartEl.scrollHeight
+      width: captureEl.scrollWidth,
+      height: captureEl.scrollHeight,
+      windowWidth: captureEl.scrollWidth,
+      windowHeight: captureEl.scrollHeight
     })
+
+    if (ganttWrap) ganttWrap.style.overflow = ""
 
     const link = document.createElement("a")
     link.download = "planning-chart.png"

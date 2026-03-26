@@ -147,7 +147,7 @@ RSpec.describe BurndownQuery do
       end
 
       it "uses entry hours_burned instead of planned for that day" do
-        create(:burndown_entry, deliverable: deliverable, date: Date.new(2025, 1, 7), hours_burned: 2.0)
+        create(:burndown_entry, deliverable: deliverable, developer: developer, date: Date.new(2025, 1, 7), hours_burned: 2.0)
 
         result = query.call(deliverable: deliverable, cycle: cycle)
 
@@ -157,7 +157,7 @@ RSpec.describe BurndownQuery do
       end
 
       it "planned series is unaffected by entries" do
-        create(:burndown_entry, deliverable: deliverable, date: Date.new(2025, 1, 7), hours_burned: 0.0)
+        create(:burndown_entry, deliverable: deliverable, developer: developer, date: Date.new(2025, 1, 7), hours_burned: 0.0)
 
         result = query.call(deliverable: deliverable, cycle: cycle)
 
@@ -166,13 +166,34 @@ RSpec.describe BurndownQuery do
       end
 
       it "handles zero hours burned (developer fully pulled away)" do
-        create(:burndown_entry, deliverable: deliverable, date: Date.new(2025, 1, 7), hours_burned: 0.0)
+        create(:burndown_entry, deliverable: deliverable, developer: developer, date: Date.new(2025, 1, 7), hours_burned: 0.0)
 
         result = query.call(deliverable: deliverable, cycle: cycle)
 
         executed_remaining = result[:executed].map { |r| r[:remaining] }
         # Day 1: 40-8=32, Day 2: 32-0=32, Day 3: 32-8=24, Day 4: 24-8=16, Day 5: 16-8=8
         expect(executed_remaining).to eq([ 32.0, 32.0, 24.0, 16.0, 8.0 ])
+      end
+    end
+
+    context "with per-developer entries on a multi-dev deliverable" do
+      let(:developer2) { create(:developer, team: team) }
+
+      before do
+        create(:deliverable_allocation, deliverable: deliverable, developer: developer, start_date: monday, end_date: friday)
+        create(:deliverable_allocation, deliverable: deliverable, developer: developer2, start_date: monday, end_date: friday)
+        create(:developer_cycle_capacity, developer: developer, cycle: cycle)
+        create(:developer_cycle_capacity, developer: developer2, cycle: cycle)
+      end
+
+      it "only affects the developer with the entry, not the other" do
+        create(:burndown_entry, deliverable: deliverable, developer: developer, date: Date.new(2025, 1, 7), hours_burned: 2.0)
+
+        result = query.call(deliverable: deliverable, cycle: cycle)
+
+        executed_remaining = result[:executed].map { |r| r[:remaining] }
+        # Day 1: 40-16=24, Day 2: 24-(2+8)=14 (dev1 overridden, dev2 planned), Day 3-5: -16 each
+        expect(executed_remaining).to eq([ 24.0, 14.0, -2.0, -18.0, -34.0 ])
       end
     end
   end

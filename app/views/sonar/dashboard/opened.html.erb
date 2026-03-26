@@ -1,0 +1,288 @@
+<% content_for(:title) { "Open Issues — Sonar" } %>
+
+<style>
+  .sonar-opened {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+  }
+  .sonar-opened__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .sonar-opened__back {
+    font-size: 0.85rem;
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .sonar-opened__back:hover { text-decoration: underline; }
+  .sonar-opened__title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .sonar-opened__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: rgba(248, 81, 73, 0.12);
+    color: var(--accent-red);
+  }
+
+  .sonar-rules-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  .sonar-rules-table th {
+    background: var(--bg-muted);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.7rem 1rem;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .sonar-rules-table th.num { text-align: right; }
+  .sonar-rules-table td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .sonar-rules-table tr:last-child td { border-bottom: none; }
+  .sonar-rules-table tr:hover td { background: var(--bg-overlay); }
+  .sonar-rules-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .sonar-rules-table .rule-key {
+    font-family: monospace;
+    font-size: 0.82rem;
+    color: var(--accent-blue);
+    white-space: nowrap;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
+  .sonar-rules-table .rule-key:hover {
+    text-decoration-style: solid;
+  }
+  .sonar-rules-table .rule-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+  .sonar-rules-table .bar-cell {
+    width: 25%;
+  }
+  .sonar-rules-bar {
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(248, 81, 73, 0.2);
+    min-width: 4px;
+  }
+
+  .sonar-opened__empty {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  /* Modal */
+  .rule-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+  .rule-modal-overlay.active { display: flex; }
+  .rule-modal {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    width: 95%;
+    max-width: 1000px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+  .rule-modal__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .rule-modal__title {
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: monospace;
+    color: var(--accent-blue);
+    margin: 0;
+  }
+  .rule-modal__close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+  }
+  .rule-modal__close:hover { color: var(--text-primary); }
+  .rule-modal__body {
+    padding: 1.25rem 1.5rem;
+    overflow-y: auto;
+  }
+  .rule-modal__repo {
+    margin-bottom: 1.25rem;
+  }
+  .rule-modal__repo:last-child { margin-bottom: 0; }
+  .rule-modal__repo-name {
+    font-weight: 700;
+    font-size: 0.88rem;
+    margin-bottom: 0.4rem;
+    color: var(--text-primary);
+  }
+  .rule-modal__file-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .rule-modal__file-list li {
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    padding: 0.2rem 0 0.2rem 1rem;
+    border-left: 2px solid var(--border);
+    line-height: 1.5;
+  }
+</style>
+
+<div class="sonar-opened">
+  <div class="sonar-opened__header">
+    <%= link_to "\u2190 Dashboard", sonar_root_path(severity: @breakdown[:severity].presence), class: "sonar-opened__back" %>
+    <h1 class="sonar-opened__title">
+      Open Issues<%= " (Critical/Blocker)" if @breakdown[:severity] == "CRITICAL" %>
+    </h1>
+    <span class="sonar-opened__badge"><%= @breakdown[:total] %></span>
+  </div>
+
+  <% if @breakdown[:rule_counts].any? %>
+    <% max_count = @breakdown[:rule_counts].values.max %>
+    <div style="overflow-x:auto; border-radius:0.5rem;">
+      <table class="sonar-rules-table">
+        <thead>
+          <tr>
+            <th>Rule</th>
+            <th>Description</th>
+            <th class="num">Repos</th>
+            <th class="num">Count</th>
+            <th class="bar-cell"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @breakdown[:rule_counts].each do |rule, count| %>
+            <% repos = @breakdown[:rule_details][rule] || {} %>
+            <tr>
+              <td><span class="rule-key" data-rule="<%= rule %>" onclick="openRuleModal(this.dataset.rule)"><%= rule || "Unknown" %></span></td>
+              <td><span class="rule-desc"><%= truncate(@breakdown[:rule_descriptions][rule] || "", length: 120) %></span></td>
+              <td class="num"><%= repos.size %></td>
+              <td class="num"><%= count %></td>
+              <td class="bar-cell">
+                <div class="sonar-rules-bar" style="width:<%= (count.to_f / max_count * 100).round(1) %>%"></div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal -->
+    <div class="rule-modal-overlay" id="ruleModal" onclick="closeRuleModal(event)">
+      <div class="rule-modal" onclick="event.stopPropagation()">
+        <div class="rule-modal__header">
+          <h2 class="rule-modal__title" id="ruleModalTitle"></h2>
+          <button class="rule-modal__close" onclick="closeRuleModal()">&times;</button>
+        </div>
+        <div class="rule-modal__body" id="ruleModalBody"></div>
+      </div>
+    </div>
+
+    <script>
+      var ruleDetails = <%= raw(
+        @breakdown[:rule_details].transform_values { |repos|
+          repos.transform_values { |files| files.first(50) }
+        }.to_json
+      ) %>;
+
+      function openRuleModal(rule) {
+        var repos = ruleDetails[rule];
+        if (!repos) return;
+
+        document.getElementById("ruleModalTitle").textContent = rule;
+        var body = document.getElementById("ruleModalBody");
+        var html = "";
+
+        var sortedRepos = Object.keys(repos).sort(function(a, b) {
+          return repos[b].length - repos[a].length;
+        });
+
+        sortedRepos.forEach(function(repoName) {
+          var files = repos[repoName];
+          html += '<div class="rule-modal__repo">';
+          html += '<div class="rule-modal__repo-name">' + escapeHtml(repoName) + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem;">(' + files.length + ' file' + (files.length === 1 ? '' : 's') + ')</span></div>';
+          html += '<ul class="rule-modal__file-list">';
+          files.forEach(function(file) {
+            html += '<li>' + escapeHtml(file) + '</li>';
+          });
+          html += '</ul></div>';
+        });
+
+        body.innerHTML = html;
+        document.getElementById("ruleModal").classList.add("active");
+      }
+
+      function closeRuleModal(event) {
+        if (event && event.target !== document.getElementById("ruleModal")) return;
+        document.getElementById("ruleModal").classList.remove("active");
+      }
+
+      document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") document.getElementById("ruleModal").classList.remove("active");
+      });
+
+      function escapeHtml(text) {
+        var div = document.createElement("div");
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+      }
+    </script>
+  <% else %>
+    <div class="sonar-opened__empty">
+      <p>No open issues found.</p>
+    </div>
+  <% end %>
+</div>

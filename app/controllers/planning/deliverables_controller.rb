@@ -42,7 +42,27 @@ module Planning
       end
     end
 
+    def sync_dates_to_jira
+      deliverable = Deliverable.find(params[:id])
+      result = build_sync_service.call(deliverable: deliverable)
+
+      if result[:success]
+        redirect_to edit_planning_deliverable_path(deliverable),
+                    notice: "Dates synced to Jira issue #{result[:issue_key]}."
+      else
+        redirect_to edit_planning_deliverable_path(deliverable),
+                    alert: "Failed to sync dates: #{result[:error]}"
+      end
+    rescue StandardError => e
+      redirect_to edit_planning_deliverable_path(deliverable),
+                  alert: "Jira sync error: #{e.message}"
+    end
+
     private
+
+    def build_sync_service
+      SyncDatesToJira.new
+    end
 
     def deliverable_params
       params.require(:deliverable).permit(

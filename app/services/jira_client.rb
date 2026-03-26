@@ -61,6 +61,14 @@ class JiraClient
     JSON.parse(response.body)["key"]
   end
 
+  def update_issue(key:, fields:)
+    path = "#{@client.options[:rest_base_path]}/issue/#{key}"
+    @client.put(path, { "fields" => fields }.to_json)
+  rescue JIRA::HTTPError => e
+    body = e.response&.body
+    raise StandardError, "JIRA #{e.code}: #{body}"
+  end
+
   def link_issues(inward_key:, outward_key:, link_type: "Cloners")
     path = "#{@client.options[:rest_base_path]}/issueLink"
     body = {

@@ -6,12 +6,14 @@ RSpec.describe "Planning::BurndownEntries", type: :request do
   let(:team) { create(:team) }
   let(:cycle) { create(:cycle, start_date: Date.new(2025, 1, 6), end_date: Date.new(2025, 1, 10)) }
   let(:deliverable) { create(:deliverable, cycle: cycle, team: team) }
+  let(:developer) { create(:developer, team: team) }
 
   describe "POST /planning/cycles/:cycle_id/burndown_entries" do
     let(:valid_params) do
       {
         burndown_entry: {
           deliverable_id: deliverable.id,
+          developer_id: developer.id,
           date: "2025-01-07",
           hours_burned: 4.0,
           note: "Developer pulled to bug fix"
@@ -19,7 +21,7 @@ RSpec.describe "Planning::BurndownEntries", type: :request do
       }
     end
 
-    it "creates a burndown entry and returns JSON" do
+    it "creates a burndown entry scoped to a developer" do
       post planning_cycle_burndown_entries_path(cycle),
            params: valid_params,
            as: :json
@@ -29,6 +31,7 @@ RSpec.describe "Planning::BurndownEntries", type: :request do
 
       entry = BurndownEntry.last
       expect(entry.deliverable).to eq(deliverable)
+      expect(entry.developer).to eq(developer)
       expect(entry.date).to eq(Date.new(2025, 1, 7))
       expect(entry.hours_burned).to eq(4.0)
       expect(entry.note).to eq("Developer pulled to bug fix")
@@ -36,7 +39,7 @@ RSpec.describe "Planning::BurndownEntries", type: :request do
 
     it "returns errors for invalid data" do
       post planning_cycle_burndown_entries_path(cycle),
-           params: { burndown_entry: { deliverable_id: deliverable.id, date: nil, hours_burned: -1 } },
+           params: { burndown_entry: { deliverable_id: deliverable.id, developer_id: developer.id, date: nil, hours_burned: -1 } },
            as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
@@ -44,14 +47,25 @@ RSpec.describe "Planning::BurndownEntries", type: :request do
       expect(body["errors"]).to be_present
     end
 
-    it "rejects duplicate date for same deliverable" do
-      create(:burndown_entry, deliverable: deliverable, date: Date.new(2025, 1, 7))
+    it "rejects duplicate date for same deliverable and developer" do
+      create(:burndown_entry, deliverable: deliverable, developer: developer, date: Date.new(2025, 1, 7))
 
       post planning_cycle_burndown_entries_path(cycle),
            params: valid_params,
            as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "allows same deliverable and date for different developers" do
+      other_dev = create(:developer, team: team)
+      create(:burndown_entry, deliverable: deliverable, developer: other_dev, date: Date.new(2025, 1, 7))
+
+      post planning_cycle_burndown_entries_path(cycle),
+           params: valid_params,
+           as: :json
+
+      expect(response).to have_http_status(:created)
     end
   end
 

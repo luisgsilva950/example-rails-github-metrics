@@ -12,21 +12,6 @@
     border-bottom: 1px solid var(--border);
     backdrop-filter: blur(12px);
   }
-  .jira-topbar__brand {
-    color: var(--text-primary);
-    font-weight: 700;
-    font-size: 0.9rem;
-    text-decoration: none;
-    padding: 0.45rem 0.6rem;
-    border-radius: 0.5rem;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    transition: background 0.15s;
-  }
-  .jira-topbar__brand:hover { background: var(--bg-muted); }
-  .jira-topbar__brand svg { width: 18px; height: 18px; fill: var(--accent-blue); }
   .jira-topbar__sep {
     width: 1px;
     height: 20px;
@@ -68,12 +53,13 @@
 %>
 
 <nav class="jira-topbar">
-  <a href="<%= metrics_dashboard_path %>" class="jira-topbar__brand">
-    <svg viewBox="0 0 24 24"><path d="M4 13h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1zm-1 7a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v4zm10 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v8zm1-17v4a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1z"/></svg>
-    Metrics
-  </a>
+  <%= render "shared/section_switcher", current_section: :metrics %>
   <span class="jira-topbar__sep"></span>
   <div class="jira-topbar__nav">
+    <a href="<%= metrics_dashboard_path %>"
+       class="jira-topbar__link<%= ' jira-topbar__link--active' if current_page?(metrics_dashboard_path) %>">
+      Dashboard
+    </a>
     <a href="<%= metrics_jira_bugs_bubble_chart_page_path(shared_params) %>"
        class="jira-topbar__link<%= ' jira-topbar__link--active' if current_page?(metrics_jira_bugs_bubble_chart_page_path) %>">
       Category Chart

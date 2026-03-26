@@ -1,0 +1,58 @@
+<style>
+  .section-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 0.5rem;
+    padding: 0.15rem;
+  }
+  .section-switcher__link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.4rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: color 0.15s, background 0.15s;
+  }
+  .section-switcher__link:hover {
+    color: var(--text-primary);
+    background: var(--bg-muted);
+  }
+  .section-switcher__link--active {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .section-switcher__link svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+</style>
+
+<% metrics_active = current_section == :metrics %>
+<% planning_active = current_section == :planning %>
+<% sonar_active = current_section == :sonar %>
+<div class="section-switcher">
+  <a href="<%= metrics_dashboard_path %>"
+     class="section-switcher__link<%= ' section-switcher__link--active' if metrics_active %>">
+    <svg viewBox="0 0 24 24"><path d="M4 13h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1zm-1 7a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v4zm10 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v8zm1-17v4a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1z"/></svg>
+    Metrics
+  </a>
+  <% current_cycle = ::Cycle.current.first %>
+  <a href="<%= current_cycle ? plan_planning_cycle_path(current_cycle) : planning_cycles_path %>"
+     class="section-switcher__link<%= ' section-switcher__link--active' if planning_active %>">
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
+    Capacity Planning
+  </a>
+  <a href="<%= sonar_root_path %>"
+     class="section-switcher__link<%= ' section-switcher__link--active' if sonar_active %>">
+    <svg viewBox="0 0 24 24"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-11v6h2v-6h-2zm0-4v2h2V7h-2z"/></svg>
+    Sonar Metrics
+  </a>
+</div>

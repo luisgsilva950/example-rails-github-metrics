@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_04_145535) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_25_221617) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -35,7 +35,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_145535) do
     t.string "note"
     t.datetime "updated_at", null: false
     t.index ["cycle_id"], name: "index_burndown_entries_on_cycle_id"
-    t.index ["deliverable_id", "date"], name: "idx_burndown_entries_deliverable_date", unique: true, where: "(deliverable_id IS NOT NULL)"
+    t.index ["deliverable_id", "developer_id", "date"], name: "idx_burndown_entries_deliverable_developer_date", unique: true, where: "((deliverable_id IS NOT NULL) AND (developer_id IS NOT NULL))"
     t.index ["deliverable_id"], name: "index_burndown_entries_on_deliverable_id"
     t.index ["developer_id", "cycle_id", "date"], name: "idx_burndown_entries_developer_cycle_date", unique: true, where: "((developer_id IS NOT NULL) AND (cycle_id IS NOT NULL))"
     t.index ["developer_id"], name: "index_burndown_entries_on_developer_id"
@@ -179,6 +179,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_145535) do
     t.check_constraint "development_type IS NULL OR (development_type::text = ANY (ARRAY['Backend'::character varying, 'Frontend'::character varying]::text[]))", name: "chk_jira_bugs_development_type"
   end
 
+  create_table "milestones", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "color", null: false
+    t.datetime "created_at", null: false
+    t.uuid "cycle_id", null: false
+    t.date "date", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cycle_id", "date"], name: "index_milestones_on_cycle_id_and_date", unique: true
+    t.index ["cycle_id"], name: "index_milestones_on_cycle_id"
+  end
+
   create_table "pull_requests", force: :cascade do |t|
     t.integer "additions"
     t.string "author_login"
@@ -212,6 +223,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_145535) do
     t.datetime "updated_at", null: false
     t.index ["github_id"], name: "index_repositories_on_github_id", unique: true
     t.index ["name"], name: "index_repositories_on_name", unique: true
+  end
+
+  create_table "sonar_issues", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "component"
+    t.datetime "created_at", null: false
+    t.datetime "creation_date"
+    t.string "effort"
+    t.string "issue_key", null: false
+    t.string "issue_type", null: false
+    t.integer "line"
+    t.text "message"
+    t.string "rule"
+    t.string "severity"
+    t.uuid "sonar_project_id", null: false
+    t.string "status"
+    t.string "tags", default: [], array: true
+    t.datetime "update_date"
+    t.datetime "updated_at", null: false
+    t.index ["sonar_project_id", "issue_key"], name: "index_sonar_issues_on_sonar_project_id_and_issue_key", unique: true
+    t.index ["sonar_project_id", "issue_type"], name: "index_sonar_issues_on_sonar_project_id_and_issue_type"
+    t.index ["sonar_project_id"], name: "index_sonar_issues_on_sonar_project_id"
+  end
+
+  create_table "sonar_projects", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.integer "bugs", default: 0, null: false
+    t.integer "code_smells", default: 0, null: false
+    t.float "coverage", default: 0.0, null: false
+    t.datetime "created_at", null: false
+    t.float "duplicated_lines_density", default: 0.0, null: false
+    t.datetime "issues_synced_at"
+    t.datetime "last_analysis_date"
+    t.datetime "metrics_synced_at"
+    t.string "name", null: false
+    t.integer "ncloc", default: 0, null: false
+    t.string "qualifier"
+    t.string "reliability_rating"
+    t.integer "security_hotspots", default: 0, null: false
+    t.string "security_rating"
+    t.string "sonar_key", null: false
+    t.string "sqale_rating"
+    t.datetime "updated_at", null: false
+    t.string "visibility"
+    t.integer "vulnerabilities", default: 0, null: false
+    t.index ["sonar_key"], name: "index_sonar_projects_on_sonar_key", unique: true
   end
 
   create_table "support_tickets", force: :cascade do |t|
@@ -269,5 +324,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_145535) do
   add_foreign_key "developer_cycle_capacities", "cycles"
   add_foreign_key "developer_cycle_capacities", "developers"
   add_foreign_key "developers", "teams"
+  add_foreign_key "milestones", "cycles"
   add_foreign_key "pull_requests", "repositories"
+  add_foreign_key "sonar_issues", "sonar_projects"
 end
