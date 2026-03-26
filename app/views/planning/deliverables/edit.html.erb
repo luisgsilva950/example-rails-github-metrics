@@ -7,7 +7,15 @@
       <h1>Edit Deliverable</h1>
       <p>Update details for <%= @deliverable.title %>.</p>
     </div>
-    <%= link_to "Back to Deliverables", planning_deliverables_path, class: "planning-btn" %>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <% if @deliverable.jira_link.present? %>
+        <%= button_to "Sync Dates to Jira",
+              sync_dates_to_jira_planning_deliverable_path(@deliverable),
+              method: :post,
+              class: "planning-btn planning-btn--primary" %>
+      <% end %>
+      <%= link_to "Back to Deliverables", planning_deliverables_path, class: "planning-btn" %>
+    </div>
   </header>
 
   <section class="planning-form-card">

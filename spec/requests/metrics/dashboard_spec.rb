@@ -64,5 +64,24 @@ RSpec.describe "Metrics::Dashboard", type: :request do
 
       expect(response).to have_http_status(:ok)
     end
+
+    it "renders the topbar with navigation links" do
+      get "/metrics/dashboard"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("jira-topbar")
+      expect(response.body).to include("Dashboard")
+      expect(response.body).to include("Category Chart")
+      expect(response.body).to include("All Bugs")
+      expect(response.body).to include("Bugs Over Time")
+      expect(response.body).to include("Invalid Categories")
+      expect(response.body).to include("Support Tickets")
+    end
+
+    it "marks Dashboard as the active topbar link" do
+      get "/metrics/dashboard"
+
+      expect(response.body).to include("jira-topbar__link--active")
+    end
   end
 end

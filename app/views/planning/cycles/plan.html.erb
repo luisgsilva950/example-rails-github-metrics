@@ -43,6 +43,7 @@
         Operations
       </button>
       <span class="pln-header__sep"></span>
+      <%= button_to "Sync All to Jira", sync_all_dates_to_jira_planning_cycle_path(@cycle), method: :post, class: "pln-action-btn" %>
       <%= link_to "Edit Cycle", edit_planning_cycle_path(@cycle), class: "pln-action-btn pln-action-btn--ghost" %>
       <%= link_to "← Cycles", planning_cycles_path, class: "pln-action-btn pln-action-btn--ghost" %>
     </div>
@@ -132,6 +133,7 @@
           </button>
         </div>
       </div>
+      <div class="gantt-capture-area">
       <div class="gantt-wrap"
            data-controller="gantt-drag gantt-click gantt-op-labels"
            data-gantt-drag-cycle-id-value="<%= @cycle.id %>"
@@ -170,6 +172,7 @@
                     <%= cap.developer.name %>
                   </button>
                 </td>
+                <% shown_alloc_labels = Set.new %>
                 <% work_days.each do |day| %>
                   <% if @holiday_dates.include?(day) %>
                     <td class="gantt__cell gantt__cell--holiday<%= ' gantt__cell--week-start' if day.monday? %>" data-day="<%= day.to_s %>">
@@ -198,25 +201,23 @@
                     <% matching = dev_allocs.select { |a| day >= a.start_date && day <= a.end_date } %>
                     <% if matching.any? %>
                       <% alloc = matching.first %>
-                      <% is_start = day == [alloc.start_date, work_days.first].max %>
-                      <% is_start = true if day == dev_allocs.select { |a| day >= a.start_date && day <= a.end_date }.first.start_date %>
+                      <% show_label = shown_alloc_labels.add?(alloc.id) %>
                       <% day_idx = work_days.index(day) %>
                       <% prev_day = day_idx && day_idx > 0 ? work_days[day_idx - 1] : nil %>
                       <% next_day = day_idx ? work_days[day_idx + 1] : nil %>
                       <% prev_is_op = prev_day && dev_ops.any? { |a| prev_day >= a.start_date && prev_day <= a.end_date } %>
-                      <% is_start = true if prev_is_op && day >= alloc.start_date %>
                       <% prev_is_alloc = prev_day && matching.any? { |a| prev_day >= a.start_date && prev_day <= a.end_date } && !prev_is_op && !@holiday_dates.include?(prev_day) && !dev_absences.any? { |a| prev_day >= a.start_date && prev_day <= a.end_date } %>
                       <% next_is_op = next_day && dev_ops.any? { |a| next_day >= a.start_date && next_day <= a.end_date } %>
                       <% next_is_alloc = next_day && matching.any? { |a| next_day >= a.start_date && next_day <= a.end_date } && !next_is_op && !@holiday_dates.include?(next_day) && !dev_absences.any? { |a| next_day >= a.start_date && next_day <= a.end_date } %>
                       <% visual_start = !prev_is_alloc %>
                       <% visual_end = !next_is_alloc %>
-                      <% has_unforeseen = @burndown_entries_set["#{alloc.deliverable_id}-#{day}"] %>
+                      <% has_unforeseen = @burndown_entries_set["#{alloc.deliverable_id}-#{cap.developer_id}-#{day}"] %>
                       <td class="gantt__cell gantt__cell--filled gantt__cell--has-tooltip<%= ' gantt__cell--alloc-start' if visual_start %><%= ' gantt__cell--alloc-end' if visual_end %><%= ' gantt__cell--week-start' if day.monday? %><%= ' gantt__cell--unforeseen' if has_unforeseen %>" data-tooltip="<%= alloc.deliverable.title %> · <%= alloc.start_date.strftime('%d/%m') %> – <%= alloc.end_date.strftime('%d/%m') %><%= " ⚠ #{has_unforeseen.note}" if has_unforeseen %>" data-day="<%= day.to_s %>" data-allocation-id="<%= alloc.id %>" data-alloc-start="<%= alloc.start_date %>" data-alloc-end="<%= alloc.end_date %>" data-deliverable-id="<%= alloc.deliverable_id %>"
 <% if has_unforeseen %> data-unforeseen-id="<%= has_unforeseen.id %>" data-unforeseen-note="<%= has_unforeseen.note %>" data-unforeseen-hours="<%= has_unforeseen.hours_burned %>"<% end %> data-action="mousedown->gantt-drag#startDrag click->gantt-click#filledCellClicked" style="background: <%= deliverable_colors[alloc.deliverable_id] %>30; border-left: <%= visual_start ? "3px solid #{deliverable_colors[alloc.deliverable_id]}" : 'none' %>; border-right: <%= visual_end ? "3px solid #{deliverable_colors[alloc.deliverable_id]}" : 'none' %>;">
                         <% if visual_start %>
                           <span class="gantt__resize-handle gantt__resize-handle--left" data-edge="start"></span>
                         <% end %>
-                        <% if is_start %>
+                        <% if show_label %>
                           <span class="gantt__bar-label" style="color: <%= deliverable_colors[alloc.deliverable_id] %>;">
                             <%= alloc.deliverable.title.truncate(10) %>
                           </span>
@@ -268,6 +269,7 @@
           <span class="gantt__legend-swatch gantt__legend-swatch--unforeseen"></span>
           <span class="gantt__legend-text">Unforeseen Event</span>
         </div>
+      </div>
       </div>
     </div>
   <% else %>

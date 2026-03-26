@@ -21,10 +21,22 @@ export default class extends Controller {
       window.scrollTo(0, parseInt(scrollY, 10))
       sessionStorage.removeItem("gantt-scroll-y")
     }
-    if (scrollX !== null) {
+    if (scrollX === null) {
+      this.scrollToToday()
+    } else {
       this.element.scrollLeft = parseInt(scrollX, 10)
       sessionStorage.removeItem("gantt-scroll-x")
     }
+  }
+
+  scrollToToday() {
+    const todayCol = this.element.querySelector(".gantt__day-col--today")
+    if (!todayCol) return
+
+    const wrapWidth = this.element.clientWidth
+    const colLeft = todayCol.offsetLeft
+    const colWidth = todayCol.offsetWidth
+    this.element.scrollLeft = colLeft - (wrapWidth / 2) + (colWidth / 2)
   }
 
   startDrag(event) {

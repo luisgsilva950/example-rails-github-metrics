@@ -1843,13 +1843,50 @@ button, .btn {
 	background: #0d1117;
 	overflow: auto;
 	padding: 1rem 1.5rem;
-	display: flex;
-	flex-direction: column;
 }
 
 .pln-gantt-section--expanded .gantt-wrap {
-	flex: 1;
-	overflow: auto;
+	overflow-x: auto;
+}
+
+.pln-gantt-section--expanded .gantt__legend {
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 1rem 1.5rem;
+}
+
+.pln-gantt-section--expanded .gantt__legend-swatch {
+	width: 18px;
+	height: 18px;
+	border-radius: 4px;
+}
+
+.pln-gantt-section--expanded .gantt__legend-text {
+	font-size: 0.875rem;
+}
+
+.pln-gantt-section--expanded .gantt__legend-item {
+	gap: 0.5rem;
+}
+
+.pln-gantt-section--expanded .gantt__cell--has-tooltip::after {
+	display: none;
+}
+
+.pln-gantt-section--expanded .gantt__cell--has-tooltip {
+	cursor: default;
+}
+
+.pln-gantt-section--expanded .gantt__cell--empty {
+	cursor: default;
+}
+
+.pln-gantt-section--expanded .gantt__cell--empty:hover {
+	background: inherit;
+}
+
+.pln-gantt-section--expanded .gantt__resize-handle {
+	display: none;
 }
 
 .pln-empty-gantt {
@@ -2571,7 +2608,7 @@ button, .btn {
 .plan-dark .gantt__label-col {
 	position: sticky;
 	left: 0;
-	z-index: 4;
+	z-index: 10;
 	background: var(--bg-overlay);
 	min-width: 160px;
 	max-width: 200px;
@@ -2583,7 +2620,7 @@ button, .btn {
 .plan-dark .gantt__label-cell {
 	position: sticky;
 	left: 0;
-	z-index: 2;
+	z-index: 8;
 	background: var(--bg-surface);
 	min-width: 160px;
 	max-width: 200px;
@@ -3208,29 +3245,6 @@ button, .btn {
 	backdrop-filter: blur(12px);
 }
 
-.planning-topbar__brand {
-	color: var(--text-primary);
-	font-weight: 700;
-	font-size: 0.9rem;
-	text-decoration: none;
-	padding: 0.45rem 0.6rem;
-	border-radius: 0.5rem;
-	white-space: nowrap;
-	display: flex;
-	align-items: center;
-	gap: 0.4rem;
-	transition: background 0.15s;
-}
-
-.planning-topbar__brand:hover {
-	background: var(--bg-muted);
-}
-
-.planning-topbar__brand svg {
-	width: 18px;
-	height: 18px;
-	fill: var(--accent-blue);
-}
 
 .planning-topbar__sep {
 	width: 1px;
@@ -4222,24 +4236,26 @@ button, .btn {
 .gantt__label-col {
 	position: sticky;
 	left: 0;
-	z-index: 4;
+	z-index: 10;
 	background: var(--bg-muted);
-	min-width: 160px;
-	max-width: 200px;
+	min-width: 110px;
+	max-width: 140px;
+	width: 110px;
 	text-align: left !important;
-	padding-left: 12px !important;
+	padding-left: 10px !important;
 	border-right: 2px solid var(--border) !important;
 }
 
 .gantt__label-cell {
 	position: sticky;
 	left: 0;
-	z-index: 2;
+	z-index: 8;
 	background: var(--bg-surface);
-	min-width: 160px;
-	max-width: 200px;
+	min-width: 110px;
+	max-width: 140px;
+	width: 110px;
 	text-align: left !important;
-	padding: 0 12px !important;
+	padding: 0 10px !important;
 	border-right: 2px solid var(--border) !important;
 	white-space: nowrap;
 	overflow: hidden;

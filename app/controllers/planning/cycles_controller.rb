@@ -37,6 +37,19 @@ module Planning
       load_plan_data
     end
 
+    def sync_all_dates_to_jira
+      cycle = Cycle.find(params[:id])
+      data = build_cycle_sync_service.call(cycle: cycle)
+      successes = data[:results].count { |r| r[:success] }
+      failures = data[:total] - successes
+
+      notice = "Synced #{successes}/#{data[:total]} deliverables to Jira."
+      notice += " #{failures} failed." if failures > 0
+      redirect_to plan_planning_cycle_path(cycle), notice: notice
+    rescue StandardError => e
+      redirect_to plan_planning_cycle_path(cycle), alert: "Jira sync error: #{e.message}"
+    end
+
     def burndown
       cycle = Cycle.find(params[:id])
       deliverables = cycle.deliverables.includes(:deliverable_allocations, :burndown_entries)
@@ -52,6 +65,10 @@ module Planning
     end
 
     private
+
+    def build_cycle_sync_service
+      SyncCycleDatesToJira.new
+    end
 
     def cycle_params
       params.require(:cycle).permit(:name, :start_date, :end_date)
@@ -153,7 +170,7 @@ module Planning
       operational_entries = BurndownEntry.where(cycle: @cycle).where.not(developer_id: nil)
 
       (deliverable_entries + operational_entries).each_with_object({}) do |entry, set|
-        key = entry.deliverable_id.present? ? "#{entry.deliverable_id}-#{entry.date}" : "#{entry.developer_id}-#{entry.date}"
+        key = entry.deliverable_id.present? ? "#{entry.deliverable_id}-#{entry.developer_id}-#{entry.date}" : "#{entry.developer_id}-#{entry.date}"
         set[key] = entry
       end
     end

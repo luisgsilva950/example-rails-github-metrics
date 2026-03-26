@@ -21,6 +21,10 @@ production:
     class: SyncSupportTicketsJob
     queue: default
     schedule: every 5 minutes
+  sync_sonar_metrics:
+    class: SyncSonarMetricsJob
+    queue: default
+    schedule: every 15 minutes
 
 development:
   sync_jira_bugs:
@@ -31,3 +35,7 @@ development:
     class: SyncSupportTicketsJob
     queue: default
     schedule: every 5 minutes
+  sync_sonar_metrics:
+    class: SyncSonarMetricsJob
+    queue: default
+    schedule: every 15 minutes

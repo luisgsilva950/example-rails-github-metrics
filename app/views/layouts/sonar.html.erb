@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || "Sonar Metrics" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body>
+    <nav class="planning-topbar">
+      <%= render "shared/section_switcher", current_section: :sonar %>
+      <span class="planning-topbar__sep"></span>
+      <div class="planning-topbar__nav">
+        <%= link_to "Dashboard", sonar_root_path, class: "planning-topbar__link #{'planning-topbar__link--active' if controller_name == 'dashboard'}" %>
+        <% if controller_name == "projects" && @project %>
+          <%= link_to @project.name, sonar_project_path(@project), class: "planning-topbar__link planning-topbar__link--active" %>
+        <% end %>
+      </div>
+    </nav>
+
+    <% if notice.present? || alert.present? %>
+      <div class="planning-toast-container">
+        <% if notice.present? %>
+          <div class="planning-toast planning-toast--success"
+               data-controller="toast"
+               data-action="click->toast#dismiss">
+            <%= notice %>
+          </div>
+        <% end %>
+        <% if alert.present? %>
+          <div class="planning-toast planning-toast--error"
+               data-controller="toast"
+               data-action="click->toast#dismiss">
+            <%= alert %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <main class="planning-main">
+      <%= yield %>
+    </main>
+  </body>
+</html>

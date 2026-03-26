@@ -42,11 +42,21 @@ RSpec.describe BurndownEntry do
       expect(entry).to be_valid
     end
 
-    it "enforces unique date per deliverable" do
-      existing = create(:burndown_entry)
+    it "enforces unique date per deliverable and developer" do
+      developer = create(:developer)
+      existing = create(:burndown_entry, developer: developer)
       entry.deliverable = existing.deliverable
+      entry.developer = developer
       entry.date = existing.date
       expect(entry).not_to be_valid
+    end
+
+    it "allows same deliverable and date for different developers" do
+      dev1 = create(:developer)
+      dev2 = create(:developer)
+      create(:burndown_entry, deliverable: entry.deliverable, developer: dev1, date: entry.date)
+      entry.developer = dev2
+      expect(entry).to be_valid
     end
 
     it "allows same date for different deliverables" do

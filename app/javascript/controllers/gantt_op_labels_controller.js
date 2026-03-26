@@ -7,11 +7,14 @@ export default class extends Controller {
     requestAnimationFrame(() => this.positionLabels())
     this._resizeObserver = new ResizeObserver(() => this.positionLabels())
     this._resizeObserver.observe(this.element)
+    this._boundReposition = () => this.positionLabels()
+    this.element.addEventListener("scroll", this._boundReposition)
   }
 
   disconnect() {
     this.removeLabels()
     this._resizeObserver?.disconnect()
+    this.element.removeEventListener("scroll", this._boundReposition)
   }
 
   positionLabels() {
@@ -19,6 +22,8 @@ export default class extends Controller {
 
     const firstCells = this.element.querySelectorAll(".gantt__cell--op-first")
     const wrapRect = this.element.getBoundingClientRect()
+    const scrollLeft = this.element.scrollLeft
+    const scrollTop = this.element.scrollTop
 
     firstCells.forEach((cell) => {
       const labelData = cell.dataset.opLabel
@@ -32,8 +37,8 @@ export default class extends Controller {
       overlay.className = "gantt__op-label-overlay"
       overlay.textContent = labelData
       overlay.style.color = labelColor || "inherit"
-      overlay.style.top = `${cellRect.top - wrapRect.top + cellRect.height / 2}px`
-      overlay.style.left = `${cellRect.left - wrapRect.left + 4}px`
+      overlay.style.top = `${cellRect.top - wrapRect.top + scrollTop + cellRect.height / 2}px`
+      overlay.style.left = `${cellRect.left - wrapRect.left + scrollLeft + 4}px`
       overlay.style.maxWidth = `${consecutiveCells * cellRect.width - 8}px`
 
       this.element.appendChild(overlay)

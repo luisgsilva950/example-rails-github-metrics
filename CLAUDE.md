@@ -1,5 +1,11 @@
 # CLAUDE.md — Code Guide for this Rails Project
 
+## Mandatory Rule: Tests with Every Change
+
+**EVERY change must have tests. Tests must cover behavior, not code.** No exceptions. A change without tests is incomplete. Tests should describe what happens from the user's perspective — not assert internal implementation details. If you're changing a view, test that the page renders the expected content. If you're changing a service, test the observable outcome. Never ship a change without corresponding behavioral tests.
+
+---
+
 ## Philosophy
 
 This project follows three core references:

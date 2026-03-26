@@ -62,10 +62,12 @@ export default class extends Controller {
 
     const day = cell.dataset.day
     const deliverableId = cell.dataset.deliverableId
-    if (!day || !deliverableId) return
+    const row = cell.closest("tr")
+    const developerId = row?.dataset.developerId
+    if (!day || !deliverableId || !developerId) return
 
     this.removePopover()
-    const context = { deliverable_id: deliverableId }
+    const context = { deliverable_id: deliverableId, developer_id: developerId }
 
     if (cell.dataset.unforeseenId) {
       this.showExistingUnforeseenPopover(cell, day, context)

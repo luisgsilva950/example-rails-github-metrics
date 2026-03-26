@@ -48,6 +48,17 @@ RSpec.describe "Metrics::JiraBugs", type: :request do
   end
 
   describe "GET /metrics/jira_bugs/bubble_chart_page" do
+    it "renders the topbar with a Dashboard link" do
+      get "/metrics/jira_bugs/bubble_chart_page", params: {
+        team: team,
+        start_date: (today - 30.days).iso8601,
+        end_date: today.iso8601
+      }
+
+      expect(response.body).to include("Dashboard")
+      expect(response.body).to include("jira-topbar")
+    end
+
     it "renders the bubble chart page" do
       get "/metrics/jira_bugs/bubble_chart_page", params: {
         team: team,

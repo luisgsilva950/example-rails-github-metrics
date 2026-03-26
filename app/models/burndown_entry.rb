@@ -7,7 +7,7 @@ class BurndownEntry < ApplicationRecord
 
   validates :date, presence: true
   validates :hours_burned, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :date, uniqueness: { scope: :deliverable_id }, if: -> { deliverable_id.present? }
+  validates :date, uniqueness: { scope: %i[deliverable_id developer_id] }, if: -> { deliverable_id.present? }
   validates :date, uniqueness: { scope: %i[developer_id cycle_id] }, if: -> { developer_id.present? && cycle_id.present? }
   validate :must_have_deliverable_or_developer
 

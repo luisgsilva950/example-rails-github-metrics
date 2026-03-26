@@ -149,6 +149,7 @@ RSpec.describe "Planning::Cycles", type: :request do
              end_date: Date.new(2026, 3, 6))
       create(:burndown_entry,
              deliverable: deliverable,
+             developer: developer,
              date: Date.new(2026, 3, 3),
              hours_burned: 0,
              note: "Bug")
@@ -205,6 +206,7 @@ RSpec.describe "Planning::Cycles", type: :request do
              end_date: Date.new(2026, 3, 4))
       entry = create(:burndown_entry,
                      deliverable: deliverable,
+                     developer: developer,
                      date: Date.new(2026, 3, 3),
                      hours_burned: 0,
                      note: "Bug fix")
@@ -214,6 +216,46 @@ RSpec.describe "Planning::Cycles", type: :request do
       expect(response.body).to include("data-unforeseen-id=\"#{entry.id}\"")
       expect(response.body).to include('data-unforeseen-note="Bug fix"')
       expect(response.body).to include('data-unforeseen-hours="0.0"')
+    end
+  end
+
+  describe "POST /planning/cycles/:id/sync_all_dates_to_jira" do
+    let(:cycle) { create(:cycle) }
+    let(:team) { create(:team) }
+    let(:fake_client) { instance_double(JiraClient) }
+
+    before do
+      allow(JiraClient).to receive(:new).and_return(fake_client)
+    end
+
+    context "with deliverables having jira links and allocations" do
+      before do
+        deliverable = create(:deliverable, team: team, cycle: cycle, jira_link: "https://jira.example.com/browse/PROJ-1")
+        developer = create(:developer, team: team)
+        create(:deliverable_allocation, deliverable: deliverable, developer: developer,
+               start_date: Date.new(2025, 1, 6), end_date: Date.new(2025, 1, 10))
+        allow(fake_client).to receive(:update_issue)
+      end
+
+      it "syncs all and redirects with success notice" do
+        post sync_all_dates_to_jira_planning_cycle_path(cycle)
+
+        expect(response).to redirect_to(plan_planning_cycle_path(cycle))
+        follow_redirect!
+        expect(response.body).to include("Synced 1/1 deliverables to Jira")
+      end
+    end
+
+    context "when no deliverables have jira links" do
+      before { create(:deliverable, team: team, cycle: cycle, jira_link: nil) }
+
+      it "reports zero synced" do
+        post sync_all_dates_to_jira_planning_cycle_path(cycle)
+
+        expect(response).to redirect_to(plan_planning_cycle_path(cycle))
+        follow_redirect!
+        expect(response.body).to include("Synced 0/0 deliverables to Jira")
+      end
     end
   end
 

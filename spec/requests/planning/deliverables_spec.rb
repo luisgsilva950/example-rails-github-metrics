@@ -76,6 +76,69 @@ RSpec.describe "Planning::Deliverables", type: :request do
     end
   end
 
+  describe "POST /planning/deliverables/:id/sync_dates_to_jira" do
+    let(:team) { create(:team) }
+    let(:cycle) { create(:cycle) }
+    let(:deliverable) do
+      create(:deliverable, team: team, cycle: cycle, jira_link: "https://jira.example.com/browse/PROJ-42")
+    end
+    let(:fake_client) { instance_double(JiraClient) }
+
+    before do
+      allow(JiraClient).to receive(:new).and_return(fake_client)
+    end
+
+    context "with valid allocations" do
+      before do
+        developer = create(:developer, team: team)
+        create(:deliverable_allocation,
+               deliverable: deliverable,
+               developer: developer,
+               start_date: Date.new(2025, 1, 6),
+               end_date: Date.new(2025, 1, 10))
+        allow(fake_client).to receive(:update_issue)
+      end
+
+      it "syncs dates and redirects with success notice" do
+        post sync_dates_to_jira_planning_deliverable_path(deliverable)
+
+        expect(response).to redirect_to(edit_planning_deliverable_path(deliverable))
+        follow_redirect!
+        expect(response.body).to include("Dates synced to Jira issue PROJ-42")
+      end
+    end
+
+    context "when deliverable has no allocations" do
+      it "redirects with error alert" do
+        post sync_dates_to_jira_planning_deliverable_path(deliverable)
+
+        expect(response).to redirect_to(edit_planning_deliverable_path(deliverable))
+        follow_redirect!
+        expect(response.body).to include("No allocations found")
+      end
+    end
+
+    context "when Jira API raises an error" do
+      before do
+        developer = create(:developer, team: team)
+        create(:deliverable_allocation,
+               deliverable: deliverable,
+               developer: developer,
+               start_date: Date.new(2025, 1, 6),
+               end_date: Date.new(2025, 1, 10))
+        allow(fake_client).to receive(:update_issue).and_raise(StandardError.new("Connection refused"))
+      end
+
+      it "redirects with error alert" do
+        post sync_dates_to_jira_planning_deliverable_path(deliverable)
+
+        expect(response).to redirect_to(edit_planning_deliverable_path(deliverable))
+        follow_redirect!
+        expect(response.body).to include("Jira sync error: Connection refused")
+      end
+    end
+  end
+
   describe "PATCH /planning/deliverables/:id" do
     let(:deliverable) { create(:deliverable, title: "Old Title") }
 

@@ -1,0 +1,241 @@
+<% content_for(:title) { @project.name } %>
+
+<style>
+  .sonar-project {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+  }
+  .sonar-project__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .sonar-project__header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .sonar-project__sync-btn {
+    margin-left: auto;
+    background: var(--accent-blue);
+    color: #fff;
+    border: none;
+    padding: 0.45rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .sonar-project__sync-btn:hover { opacity: 0.9; }
+
+  /* Metrics row */
+  .sonar-project__metrics {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .sonar-project__metric {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    text-align: center;
+    min-width: 100px;
+  }
+  .sonar-project__metric-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .sonar-project__metric-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin: 0.15rem 0 0;
+  }
+
+  /* Filters */
+  .sonar-filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    align-items: center;
+  }
+  .sonar-filters select {
+    background: var(--bg-overlay);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    padding: 0.4rem 0.75rem;
+    font-size: 0.82rem;
+  }
+  .sonar-filters__btn {
+    background: var(--accent-blue);
+    color: #fff;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sonar-filters__clear {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.82rem;
+  }
+  .sonar-filters__clear:hover { color: var(--text-primary); }
+
+  /* Issues table */
+  .sonar-issue-type {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .sonar-issue-type--bug { background: rgba(248, 81, 73, 0.12); color: var(--accent-red); }
+  .sonar-issue-type--vulnerability { background: rgba(210, 153, 34, 0.12); color: var(--accent-orange); }
+  .sonar-issue-type--code_smell { background: rgba(188, 140, 255, 0.12); color: var(--accent-purple); }
+  .sonar-issue-type--security_hotspot { background: rgba(88, 166, 255, 0.12); color: var(--accent-blue); }
+
+  .sonar-severity {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .sonar-severity--blocker { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+  .sonar-severity--critical { background: rgba(248, 81, 73, 0.1); color: #ffa198; }
+  .sonar-severity--major { background: rgba(210, 153, 34, 0.12); color: var(--accent-orange); }
+  .sonar-severity--minor { background: rgba(63, 185, 80, 0.1); color: var(--accent-green); }
+  .sonar-severity--info { background: var(--bg-muted); color: var(--text-secondary); }
+
+  .sonar-tag {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    background: var(--bg-muted);
+    color: var(--text-secondary);
+    margin-right: 0.25rem;
+  }
+  .sonar-component {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-family: monospace;
+    word-break: break-all;
+  }
+</style>
+
+<div class="sonar-project">
+  <div class="sonar-project__header">
+    <h1><%= @project.name %></h1>
+    <%= link_to "Sync Issues", sync_issues_sonar_project_path(@project), method: :post, class: "sonar-project__sync-btn", data: { turbo_method: :post } %>
+  </div>
+
+  <div class="sonar-project__metrics">
+    <div class="sonar-project__metric">
+      <p class="sonar-project__metric-value" style="color: var(--accent-red);"><%= @project.bugs %></p>
+      <p class="sonar-project__metric-label">Bugs</p>
+    </div>
+    <div class="sonar-project__metric">
+      <p class="sonar-project__metric-value" style="color: var(--accent-orange);"><%= @project.vulnerabilities %></p>
+      <p class="sonar-project__metric-label">Vulnerabilities</p>
+    </div>
+    <div class="sonar-project__metric">
+      <p class="sonar-project__metric-value" style="color: var(--accent-purple);"><%= @project.code_smells %></p>
+      <p class="sonar-project__metric-label">Code Smells</p>
+    </div>
+    <div class="sonar-project__metric">
+      <p class="sonar-project__metric-value" style="color: var(--accent-cyan);"><%= @project.security_hotspots %></p>
+      <p class="sonar-project__metric-label">Hotspots</p>
+    </div>
+    <div class="sonar-project__metric">
+      <p class="sonar-project__metric-value" style="color: var(--accent-green);"><%= number_with_precision(@project.coverage, precision: 1) %>%</p>
+      <p class="sonar-project__metric-label">Coverage</p>
+    </div>
+    <div class="sonar-project__metric">
+      <p class="sonar-project__metric-value"><%= render_rating(@project.reliability_rating) %></p>
+      <p class="sonar-project__metric-label">Reliability</p>
+    </div>
+    <div class="sonar-project__metric">
+      <p class="sonar-project__metric-value"><%= render_rating(@project.security_rating) %></p>
+      <p class="sonar-project__metric-label">Security</p>
+    </div>
+    <div class="sonar-project__metric">
+      <p class="sonar-project__metric-value"><%= render_rating(@project.sqale_rating) %></p>
+      <p class="sonar-project__metric-label">Maintainability</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <%= form_with url: sonar_project_path(@project), method: :get, local: true, class: "sonar-filters" do %>
+    <select name="type">
+      <option value="">All Types</option>
+      <% %w[BUG VULNERABILITY CODE_SMELL SECURITY_HOTSPOT].each do |t| %>
+        <option value="<%= t %>" <%= "selected" if params[:type] == t %>><%= t.titleize %></option>
+      <% end %>
+    </select>
+    <select name="severity">
+      <option value="">All Severities</option>
+      <% %w[BLOCKER CRITICAL MAJOR MINOR INFO].each do |s| %>
+        <option value="<%= s %>" <%= "selected" if params[:severity] == s %>><%= s.titleize %></option>
+      <% end %>
+    </select>
+    <button type="submit" class="sonar-filters__btn">Filter</button>
+    <%= link_to "Clear", sonar_project_path(@project), class: "sonar-filters__clear" %>
+  <% end %>
+
+  <!-- Issues table -->
+  <% if @issues.any? %>
+    <div class="sonar-table-wrap">
+      <table class="sonar-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Severity</th>
+            <th>Status</th>
+            <th>Message</th>
+            <th>File</th>
+            <th>Line</th>
+            <th>Effort</th>
+            <th>Tags</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @issues.each do |issue| %>
+            <tr>
+              <td><span class="sonar-issue-type sonar-issue-type--<%= issue.issue_type.downcase %>"><%= issue.issue_type.titleize %></span></td>
+              <td><span class="sonar-severity sonar-severity--<%= issue.severity&.downcase %>"><%= issue.severity %></span></td>
+              <td><%= issue.status %></td>
+              <td><%= truncate(issue.message, length: 100) %></td>
+              <td><span class="sonar-component"><%= issue.component&.split(":")&.last %></span></td>
+              <td class="num"><%= issue.line %></td>
+              <td><%= issue.effort %></td>
+              <td><% issue.tags.each do |tag| %><span class="sonar-tag"><%= tag %></span><% end %></td>
+              <td><%= issue.creation_date&.strftime("%Y-%m-%d") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="sonar-empty">
+      <p>No issues found. Try adjusting the filters or sync issues from SonarCloud.</p>
+    </div>
+  <% end %>
+</div>

@@ -40,8 +40,8 @@ class BurndownQuery
   end
 
   def entries_by_date(deliverable)
-    deliverable.burndown_entries.each_with_object({}) do |entry, map|
-      map[entry.date] = entry.hours_burned
+    deliverable.burndown_entries.group_by(&:date).transform_values do |day_entries|
+      { total: day_entries.sum(&:hours_burned), count: day_entries.size }
     end
   end
 
@@ -56,9 +56,15 @@ class BurndownQuery
   def build_executed_series(total_effort, work_dates, planned_hours, entries)
     remaining = total_effort.to_f
     work_dates.map do |date|
-      burned = entries.key?(date) ? entries[date] : planned_hours[date]
-      remaining -= burned
+      remaining -= burned_hours(planned_hours[date], entries[date])
       { date: date.to_s, remaining: remaining }
     end
+  end
+
+  def burned_hours(planned, entry_data)
+    return planned unless entry_data
+
+    unaffected = planned - (entry_data[:count] * 8)
+    entry_data[:total] + [ unaffected, 0 ].max
   end
 end
